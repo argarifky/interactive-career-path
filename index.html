@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARGA — Founder. Mentor. Builder.</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#080c16;
+  --panel:#0c1220;
+  --border:#1a2540;
+  --f:#ff6b35;
+  --m:#00d4ff;
+  --b:#a855f7;
+  --gold:#f59e0b;
+  --red:#ef4444;
+  --text:#b8c8e0;
+  --white:#e8f0ff;
+  --dim:#3a4a68;
+  --accent:var(--m);
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-family:'Space Grotesk',sans-serif;color:var(--text)}
+
+/* ── BG CANVAS ── */
+#bgCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 30%,rgba(8,12,22,.9) 100%)}
+#scanlines{position:fixed;inset:0;z-index:2;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px)}
+
+/* ── PARTICLES ── */
+#particles{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+@keyframes floatUp{0%{transform:translateY(0);opacity:0}10%{opacity:.5}90%{opacity:.1}100%{transform:translateY(-100vh);opacity:0}}
+
+/* ══════════════════════════════
+   INTRO SCREEN
+══════════════════════════════ */
+#intro{
+  position:fixed;inset:0;z-index:500;
+  background:var(--ink);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:0;
+  transition:opacity .8s ease;
+}
+.intro-pre{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:4px;margin-bottom:16px;animation:fadeUp .6s ease both}
+.intro-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(60px,14vw,130px);line-height:.9;letter-spacing:8px;color:var(--white);animation:fadeUp .6s .1s ease both}
+.intro-tagline{margin-top:14px;display:flex;gap:0;animation:fadeUp .6s .2s ease both}
+.tw{font-family:'Space Mono',monospace;font-size:clamp(11px,2vw,16px);padding:0 18px;letter-spacing:3px;position:relative}
+.tw:not(:last-child)::after{content:'·';position:absolute;right:-2px;color:var(--dim)}
+.tf{color:var(--f)}.tm{color:var(--m)}.tb{color:var(--b)}
+.intro-desc{margin-top:28px;max-width:420px;text-align:center;font-size:14px;line-height:1.8;color:var(--dim);animation:fadeUp .6s .3s ease both}
+.intro-desc strong{color:var(--text)}
+.intro-cta{margin-top:32px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s ease both}
+.cta{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;padding:13px 28px;border-radius:3px;cursor:pointer;border:none;transition:all .2s;position:relative;overflow:hidden}
+.cta::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);transform:translateX(-100%);transition:transform .4s}
+.cta:hover::after{transform:translateX(100%)}
+.cta-f{background:var(--f);color:#fff}.cta-f:hover{box-shadow:0 0 28px rgba(255,107,53,.45);transform:translateY(-2px)}
+.cta-m{background:var(--m);color:#000}.cta-m:hover{box-shadow:0 0 28px rgba(0,212,255,.45);transform:translateY(-2px)}
+.cta-b{background:var(--b);color:#fff}.cta-b:hover{box-shadow:0 0 28px rgba(168,85,247,.45);transform:translateY(-2px)}
+.intro-hint{margin-top:16px;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px;animation:blink 2s infinite .5s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes blink{0%,100%{opacity:.3}50%{opacity:.9}}
+
+/* ══════════════════════════════
+   GAME LAYOUT — fixed regions, NO overlaps
+   
+   TOP: HUD bar (56px)
+   BOTTOM: dialogue area (fixed height 220px desktop / 200px mobile)
+   LEFT: mode tabs (64px wide)
+   RIGHT: stats panel (140px wide)
+   CENTER: character stage
+   CHOICES: above dialogue, inside safe zone
+══════════════════════════════ */
+
+/* HUD — top bar */
+#hud{
+  position:fixed;top:0;left:0;right:0;height:56px;z-index:100;
+  padding:0 16px 0 72px;
+  display:flex;align-items:center;gap:12px;
+  background:linear-gradient(180deg,rgba(8,12,22,.98) 70%,transparent);
+  border-bottom:1px solid rgba(26,37,64,.6);
+}
+#hudLogo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:4px;color:var(--white);cursor:pointer;transition:opacity .2s}
+#hudLogo:hover{opacity:.6}
+#hudMode{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;padding:3px 10px;border-radius:20px;transition:all .4s}
+.hm-f{background:rgba(255,107,53,.15);border:1px solid rgba(255,107,53,.4);color:var(--f)}
+.hm-m{background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.4);color:var(--m)}
+.hm-b{background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.4);color:var(--b)}
+#hudRight{margin-left:auto;display:flex;align-items:center;gap:14px}
+.hpill{display:flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim)}
+.hpill .v{color:var(--white);font-weight:700}
+.xpw{width:70px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.xpi{height:100%;border-radius:2px;transition:width .5s ease;width:0%}
+.xpi-f{background:linear-gradient(90deg,#c0392b,var(--f))}
+.xpi-m{background:linear-gradient(90deg,#0891b2,var(--m))}
+.xpi-b{background:linear-gradient(90deg,#7c3aed,var(--b))}
+
+/* CV Download button — always visible */
+#profileBtn{
+  display:flex;align-items:center;gap:6px;
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;
+  padding:6px 12px;border-radius:3px;
+  background:linear-gradient(135deg,rgba(255,107,53,.18),rgba(168,85,247,.18));
+  border:1px solid rgba(168,85,247,.5);
+  color:var(--white);cursor:pointer;text-decoration:none;
+  transition:all .2s;white-space:nowrap;
+}
+#profileBtn:hover{
+  background:linear-gradient(135deg,rgba(255,107,53,.32),rgba(168,85,247,.32));
+  border-color:var(--b);
+  box-shadow:0 0 20px rgba(168,85,247,.3),0 0 20px rgba(255,107,53,.15);
+  color:var(--white);
+}
+#cvBtn{
+  display:flex;align-items:center;gap:6px;
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;
+  padding:6px 12px;border-radius:3px;
+  background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);
+  color:var(--gold);cursor:pointer;text-decoration:none;
+  transition:all .2s;white-space:nowrap;
+}
+#cvBtn:hover{background:rgba(245,158,11,.22);box-shadow:0 0 16px rgba(245,158,11,.2);color:var(--gold)}
+
+/* MODE TABS — left strip */
+#modeTabs{
+  position:fixed;left:0;top:56px;bottom:0;width:56px;z-index:90;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  background:rgba(8,12,22,.7);border-right:1px solid rgba(26,37,64,.5);
+  padding:8px 0;
+}
+.mtab{
+  width:40px;height:40px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;
+  border:1px solid var(--border);background:rgba(8,12,22,.5);
+  transition:all .2s;position:relative;
+}
+.mtab:hover{transform:scale(1.1)}
+.mtab.af{border-color:var(--f);box-shadow:0 0 12px rgba(255,107,53,.3);background:rgba(255,107,53,.1)}
+.mtab.am{border-color:var(--m);box-shadow:0 0 12px rgba(0,212,255,.25);background:rgba(0,212,255,.08)}
+.mtab.ab{border-color:var(--b);box-shadow:0 0 12px rgba(168,85,247,.3);background:rgba(168,85,247,.1)}
+.mtt{
+  position:absolute;left:48px;top:50%;transform:translateY(-50%);
+  background:rgba(8,12,22,.95);border:1px solid var(--border);
+  padding:4px 10px;border-radius:3px;
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;
+  white-space:nowrap;color:var(--text);
+  opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;
+}
+.mtab:hover .mtt{opacity:1}
+
+/* STATS — right strip */
+#statsPanel{
+  position:fixed;right:0;top:56px;bottom:220px;width:130px;z-index:90;
+  display:none;flex-direction:column;gap:6px;
+  padding:12px 8px;
+  background:rgba(8,12,22,.7);border-left:1px solid rgba(26,37,64,.5);
+  overflow:hidden;
+}
+#statsPanel.on{display:flex}
+.sc{background:rgba(8,12,22,.6);border:1px solid var(--border);border-radius:5px;padding:8px 10px}
+.scl{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dim);margin-bottom:3px}
+.scv{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;line-height:1}
+.scv-f{color:var(--f)}.scv-m{color:var(--m)}.scv-b{color:var(--b)}.scv-g{color:var(--gold)}
+.scs{font-size:9px;color:var(--dim);margin-top:1px}
+
+/* TIMELINE dots — inside left strip */
+#timeline{
+  position:fixed;left:0;top:56px;bottom:220px;width:56px;z-index:89;
+  display:none;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding-bottom:16px;gap:0;
+  pointer-events:none;
+}
+#timeline.on{display:flex}
+.tld{width:7px;height:7px;border-radius:50%;border:1px solid var(--border);background:var(--border);transition:all .4s;margin:3px 0}
+.tld.vis{background:var(--dim);border-color:var(--dim)}
+.tld.cur-f{background:var(--f);border-color:var(--f);box-shadow:0 0 6px rgba(255,107,53,.6)}
+.tld.cur-m{background:var(--m);border-color:var(--m);box-shadow:0 0 6px rgba(0,212,255,.5)}
+.tld.cur-b{background:var(--b);border-color:var(--b);box-shadow:0 0 6px rgba(168,85,247,.5)}
+.tll{width:1px;height:10px;background:var(--border)}
+
+/* CHARACTER STAGE — center, between HUD top and dialogue bottom */
+#charStage{
+  position:fixed;
+  left:56px;right:130px;
+  top:56px;bottom:220px;
+  z-index:20;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  pointer-events:none;
+  transition:opacity .5s;
+}
+#charStage.hidden{opacity:0}
+#charSvg{
+  width:min(180px, 22vw);
+  height:auto;
+  max-height:calc(100% - 20px);
+  filter:drop-shadow(0 20px 50px rgba(0,0,0,.9));
+  animation:idle 4s ease-in-out infinite;
+  flex-shrink:0;
+}
+@keyframes idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+#charSvg.talking{animation:talk .2s steps(1) infinite}
+@keyframes talk{0%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+#charLabel{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--dim);margin-top:6px;margin-bottom:8px;transition:color .4s}
+
+/* DIALOGUE AREA — fixed bottom 220px */
+#dlgArea{
+  position:fixed;bottom:0;left:56px;right:130px;
+  height:220px;z-index:80;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 16px 16px;
+  background:linear-gradient(0deg,rgba(8,12,22,.98) 60%,transparent);
+}
+#nameBox{
+  font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
+  letter-spacing:3px;padding:5px 14px;
+  border-radius:4px 4px 0 0;width:fit-content;margin-left:8px;
+  display:none;
+}
+.nb-f{background:var(--f);color:#fff}
+.nb-m{background:var(--m);color:#000}
+.nb-b{background:var(--b);color:#fff}
+#dlgBox{
+  background:rgba(8,12,22,.95);
+  border:1px solid var(--border);
+  border-radius:0 6px 6px 6px;
+  padding:14px 18px 28px;
+  position:relative;
+  backdrop-filter:blur(12px);
+  min-height:80px;
+  cursor:pointer;
+}
+.da{position:absolute;top:0;left:0;right:0;height:2px;border-radius:0;transition:background .4s}
+.da-f{background:linear-gradient(90deg,transparent,var(--f),transparent)}
+.da-m{background:linear-gradient(90deg,transparent,var(--m),transparent)}
+.da-b{background:linear-gradient(90deg,transparent,var(--b),transparent)}
+#dlgText{font-size:14px;line-height:1.7;color:var(--white);min-height:44px}
+.t-nar{color:var(--dim);font-style:italic;font-size:13px}
+.t-hi{color:var(--gold);font-weight:600}
+.t-sys{color:var(--m);font-family:'Space Mono',monospace;font-size:12px}
+.t-raw{color:var(--red);font-weight:500}
+#dlgContinue{position:absolute;bottom:10px;right:14px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;display:none;animation:blink 1s infinite}
+.dc-f{color:var(--f)}.dc-m{color:var(--m)}.dc-b{color:var(--b)}
+
+/* CHOICES — above dialogue, full width minus side panels */
+#choices{
+  position:fixed;
+  left:56px;right:130px;
+  bottom:220px;
+  z-index:85;
+  padding:8px 16px;
+  display:flex;flex-direction:column;gap:5px;
+  opacity:0;pointer-events:none;transform:translateY(6px);
+  transition:all .3s cubic-bezier(.4,0,.2,1);
+  max-height:200px;overflow-y:auto;
+}
+#choices.on{opacity:1;pointer-events:all;transform:none}
+.chb{
+  background:rgba(8,12,22,.9);
+  border:1px solid var(--border);
+  border-left-width:3px;
+  color:var(--text);font-family:'Space Grotesk',sans-serif;
+  font-size:13px;font-weight:500;
+  padding:9px 14px;border-radius:0 4px 4px 0;
+  cursor:pointer;transition:all .18s;text-align:left;
+  display:flex;align-items:center;gap:8px;
+  backdrop-filter:blur(8px);flex-shrink:0;
+}
+.chb-f{border-left-color:rgba(255,107,53,.5)}
+.chb-f:hover{border-left-color:var(--f);background:rgba(255,107,53,.08);color:var(--white);transform:translateX(5px)}
+.chb-m{border-left-color:rgba(0,212,255,.4)}
+.chb-m:hover{border-left-color:var(--m);background:rgba(0,212,255,.06);color:var(--white);transform:translateX(5px)}
+.chb-b{border-left-color:rgba(168,85,247,.4)}
+.chb-b:hover{border-left-color:var(--b);background:rgba(168,85,247,.08);color:var(--white);transform:translateX(5px)}
+.cha{font-family:'Space Mono',monospace;font-size:10px;opacity:.5;transition:opacity .2s;flex-shrink:0}
+.chb:hover .cha{opacity:1}
+
+/* CHAPTER BANNER */
+#chBanner{
+  position:fixed;inset:0;z-index:300;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(8,12,22,.92);
+  pointer-events:none;opacity:0;transition:opacity .45s;
+}
+#chBanner.on{opacity:1}
+.cbi{text-align:center;transform:translateY(8px);transition:transform .45s}
+#chBanner.on .cbi{transform:none}
+.cbe{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:5px;color:var(--dim);margin-bottom:10px}
+.cbt{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,8vw,78px);letter-spacing:6px;color:var(--white);line-height:1}
+.cbt-f{color:var(--f);text-shadow:0 0 40px rgba(255,107,53,.5)}
+.cbt-m{color:var(--m);text-shadow:0 0 40px rgba(0,212,255,.5)}
+.cbt-b{color:var(--b);text-shadow:0 0 40px rgba(168,85,247,.5)}
+.cbs{font-size:13px;color:var(--dim);margin-top:8px;letter-spacing:2px}
+
+/* ACHIEVEMENT */
+#achPop{
+  position:fixed;top:68px;right:140px;z-index:200;
+  background:rgba(8,12,22,.97);border:1px solid var(--gold);
+  border-radius:8px;padding:12px 16px;
+  display:flex;align-items:center;gap:12px;min-width:240px;
+  transform:translateX(400px);transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 0 30px rgba(245,158,11,.12);
+}
+#achPop.on{transform:translateX(0)}
+#achIcon{font-size:28px}
+.abl{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--gold);margin-bottom:2px}
+.abt{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--white)}
+.abd{font-size:11px;color:var(--dim);margin-top:1px}
+
+/* CONNECT BAR — fixed bottom right panel, above stats, always clickable */
+#connectBar{
+  position:fixed;
+  right:0;
+  bottom:0;
+  width:130px;
+  height:220px;
+  z-index:95;
+  display:none;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:center;
+  gap:8px;
+  padding:12px 8px;
+  background:rgba(8,12,22,.92);
+  border-top:1px solid var(--border);
+  border-left:1px solid var(--border);
+  pointer-events:all;
+}
+#connectBar.on{display:flex}
+.cb-label{
+  font-family:'Space Mono',monospace;font-size:7px;
+  letter-spacing:2px;color:var(--dim);
+  padding-bottom:6px;border-bottom:1px solid var(--border);
+  margin-bottom:2px;text-align:center;
+}
+.cb-btn{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;
+  padding:10px 8px;border-radius:4px;
+  cursor:pointer;text-decoration:none;
+  border:1px solid var(--border);
+  transition:all .2s;font-weight:700;
+  pointer-events:all;
+  position:relative;z-index:96;
+}
+.cb-li{color:#0a66c2;border-color:rgba(10,102,194,.4);background:rgba(10,102,194,.1)}
+.cb-li:hover{background:rgba(10,102,194,.22);border-color:#0a66c2;box-shadow:0 0 12px rgba(10,102,194,.3)}
+.cb-em{color:var(--gold);border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.1)}
+.cb-em:hover{background:rgba(245,158,11,.22);border-color:var(--gold);box-shadow:0 0 12px rgba(245,158,11,.3)}
+.cb-btn svg{flex-shrink:0}
+
+/* ── MOBILE LAYOUT ──
+   Phone: no side panels, full width dialogue, bottom connect bar hidden
+   replaced by floating connect row at top of dialogue
+*/
+@media(max-width:700px){
+  /* Collapse left tabs to icon-only strip */
+  #modeTabs{width:44px}
+  #modeTabs .mtt{display:none}
+  /* Hide right panels on mobile — shown inline instead */
+  #statsPanel{display:none!important}
+  #connectBar{display:none!important}
+  #timeline{width:44px;display:none}
+  /* Full width content areas */
+  #charStage{left:44px;right:0}
+  #dlgArea{left:44px;right:0;height:180px;padding:0 10px 10px}
+  #choices{left:44px;right:0;bottom:180px}
+  #hud{padding:0 10px 0 56px;height:50px}
+  #hudLogo{font-size:18px}
+  #hudMode{font-size:8px;padding:2px 8px}
+  .hpill{font-size:9px}
+  .xpw{width:50px}
+  #cvBtn{padding:5px 8px;font-size:8px}
+  #cvBtn .cv-label{display:inline}
+  #profileBtn{padding:5px 8px;font-size:8px}
+  #profileBtn .cv-label{display:inline}
+  /* Mobile connect row inside dialogue area */
+  #mobileConnect{display:flex}
+  /* Ach pop */
+  #achPop{right:8px;top:60px;min-width:200px}
+  /* Character smaller */
+  #charSvg{width:120px}
+  #charLabel{font-size:7px}
+  /* Dialogue text */
+  #dlgText{font-size:13px;min-height:36px}
+  #dlgBox{padding:12px 14px 26px}
+  .chb{font-size:12px;padding:8px 12px}
+  #nameBox{font-size:9px;padding:4px 12px}
+}
+@media(max-width:400px){
+  #charSvg{width:100px}
+  #dlgText{font-size:12px}
+  .chb{font-size:11px}
+}
+
+/* Mobile connect row — inside dialogue, hidden on desktop */
+#mobileConnect{
+  display:none;
+  align-items:center;gap:6px;
+  padding:6px 0 8px;
+  margin-bottom:4px;
+  border-bottom:1px solid var(--border);
+}
+.mcb-label{
+  font-family:'Space Mono',monospace;font-size:7px;
+  letter-spacing:2px;color:var(--dim);margin-right:2px;
+}
+.mcb{
+  display:flex;align-items:center;gap:5px;
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;font-weight:700;
+  padding:5px 10px;border-radius:3px;
+  text-decoration:none;border:1px solid var(--border);
+  transition:all .2s;cursor:pointer;
+}
+.mcb:first-of-type{color:#0a66c2;background:rgba(10,102,194,.1);border-color:rgba(10,102,194,.3)}
+.mcb:last-of-type{color:var(--gold);background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3)}
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<div id="vignette"></div>
+<div id="scanlines"></div>
+<div id="particles"></div>
+
+<!-- INTRO -->
+<div id="intro">
+  <div class="intro-pre">INTERACTIVE CAREER PROFILE</div>
+  <div class="intro-name">ARGA</div>
+  <div class="intro-tagline">
+    <span class="tw tf">FOUNDER</span>
+    <span class="tw tm">MENTOR</span>
+    <span class="tw tb">BUILDER</span>
+  </div>
+  <div class="intro-desc">10+ years. 100+ startups. One city in East Java.<br><strong>Three ways to know who Arga Rifky Nugraha really is.</strong></div>
+  <div class="intro-cta">
+    <button class="cta cta-f" onclick="startPath('f')">⚡ THE FOUNDER</button>
+    <button class="cta cta-m" onclick="startPath('m')">🎯 THE MENTOR</button>
+    <button class="cta cta-b" onclick="startPath('b')">🏗️ THE BUILDER</button>
+  </div>
+  <div class="intro-hint">↑ CHOOSE A PATH TO BEGIN</div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="hudLogo" onclick="returnMenu()">ARGA</div>
+  <div id="hudMode" class="hm-m">MENTOR</div>
+  <div id="hudRight">
+    <div class="hpill">⚡LV<span class="v" id="hudLv">01</span></div>
+    <div class="hpill"><div class="xpw"><div class="xpi xpi-m" id="xpBar"></div></div></div>
+    <div class="hpill">🔍<span class="v" id="hudDisc">0</span>/16</div>
+    <div class="hpill">🏆<span class="v" id="hudAch">0</span>/7</div>
+    <a id="profileBtn" href="https://argarifky.github.io/profile/" target="_blank">
+      🌐 <span class="cv-label">PROFILE</span>
+    </a>
+    <a id="cvBtn" href="https://drive.google.com/file/d/13nCB9mETLWfSbqU92jsmaNpGplWCayB9/view?usp=sharing" target="_blank">
+      📄 <span class="cv-label">VIEW CV</span>
+    </a>
+  </div>
+</div>
+
+<!-- MODE TABS -->
+<div id="modeTabs">
+  <div class="mtab" id="tabF" onclick="switchMode('f')">⚡<div class="mtt">FOUNDER</div></div>
+  <div class="mtab" id="tabM" onclick="switchMode('m')">🎯<div class="mtt">MENTOR</div></div>
+  <div class="mtab" id="tabB" onclick="switchMode('b')">🏗️<div class="mtt">BUILDER</div></div>
+</div>
+
+<!-- STATS PANEL -->
+<div id="statsPanel">
+  <div class="sc"><div class="scl">STARTUPS</div><div class="scv scv-g">100+</div><div class="scs">mentored</div></div>
+  <div class="sc"><div class="scl">EXPERIENCE</div><div class="scv scv-m">10+</div><div class="scs">years active</div></div>
+  <div class="sc"><div class="scl">PROGRAMS</div><div class="scv scv-b">15+</div><div class="scs">led nationally</div></div>
+  <div class="sc"><div class="scl">LEVEL</div><div class="scv scv-f" id="statLv">01</div><div class="scs">explorer rank</div></div>
+</div>
+
+<!-- TIMELINE -->
+<div id="timeline">
+  <div class="tld" id="tl0"></div><div class="tll"></div>
+  <div class="tld" id="tl1"></div><div class="tll"></div>
+  <div class="tld" id="tl2"></div><div class="tll"></div>
+  <div class="tld" id="tl3"></div><div class="tll"></div>
+  <div class="tld" id="tl4"></div><div class="tll"></div>
+  <div class="tld" id="tl5"></div><div class="tll"></div>
+  <div class="tld" id="tl6"></div>
+</div>
+
+<!-- CHARACTER -->
+<div id="charStage" class="hidden">
+  <svg id="charSvg" viewBox="0 0 200 310" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f3c5a0"/><stop offset="100%" stop-color="#e0a87a"/></linearGradient>
+      <linearGradient id="shg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1e2d45"/><stop offset="100%" stop-color="#131f30"/></linearGradient>
+      <linearGradient id="jg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#253550"/><stop offset="100%" stop-color="#151e30"/></linearGradient>
+      <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#231508"/><stop offset="100%" stop-color="#140c04"/></linearGradient>
+      <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a2238"/><stop offset="100%" stop-color="#0f1522"/></linearGradient>
+    </defs>
+    <!-- shadow -->
+    <ellipse cx="100" cy="307" rx="52" ry="5" fill="rgba(0,0,0,.4)"/>
+    <!-- legs -->
+    <rect x="66" y="210" width="27" height="82" rx="7" fill="url(#pg)"/>
+    <rect x="107" y="210" width="27" height="82" rx="7" fill="url(#pg)"/>
+    <!-- shoes -->
+    <ellipse cx="79" cy="291" rx="18" ry="7" fill="#0d1220"/>
+    <ellipse cx="120" cy="291" rx="18" ry="7" fill="#0d1220"/>
+    <ellipse cx="75" cy="290" rx="13" ry="4" fill="#1a2035" opacity=".7"/>
+    <ellipse cx="116" cy="290" rx="13" ry="4" fill="#1a2035" opacity=".7"/>
+    <!-- shirt body -->
+    <rect x="54" y="140" width="92" height="76" rx="10" fill="url(#shg)"/>
+    <!-- jacket panels open -->
+    <path d="M54,140 L54,216 L86,216 L86,157 Z" fill="url(#jg)"/>
+    <path d="M146,140 L146,216 L114,216 L114,157 Z" fill="url(#jg)"/>
+    <!-- lapels -->
+    <path d="M86,157 L68,140 L54,140 L54,166 Z" fill="#1e2d44" opacity=".9"/>
+    <path d="M114,157 L132,140 L146,140 L146,166 Z" fill="#1e2d44" opacity=".9"/>
+    <!-- shirt collar -->
+    <path d="M86,157 Q100,142 114,157 L114,150 Q100,135 86,150 Z" fill="url(#shg)"/>
+    <!-- jacket accent stripes -->
+    <rect x="54" y="140" width="4" height="76" fill="currentColor" opacity=".12"/>
+    <rect x="142" y="140" width="4" height="76" fill="currentColor" opacity=".12"/>
+    <!-- chest pocket -->
+    <rect x="61" y="165" width="21" height="14" rx="3" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+    <!-- arms -->
+    <path d="M54,142 Q34,147 31,178 Q29,198 38,212 L52,212 Q48,198 49,178 Q51,158 59,150 Z" fill="url(#jg)"/>
+    <path d="M31,180 Q29,198 38,212 L52,212 Q48,200 50,184 Z" fill="#e0a87a" opacity=".9"/>
+    <path d="M31,181 Q50,187 52,186" stroke="rgba(0,0,0,.2)" stroke-width="2" fill="none"/>
+    <path d="M146,142 Q166,147 169,178 Q171,198 162,212 L148,212 Q152,198 151,178 Q149,158 141,150 Z" fill="url(#jg)"/>
+    <path d="M169,180 Q171,198 162,212 L148,212 Q152,200 150,184 Z" fill="#e0a87a" opacity=".9"/>
+    <path d="M169,181 Q150,187 148,186" stroke="rgba(0,0,0,.2)" stroke-width="2" fill="none"/>
+    <!-- notebook in left hand -->
+    <rect x="26" y="210" width="34" height="46" rx="3" fill="#0d1525" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+    <rect x="29" y="214" width="28" height="38" rx="2" fill="#0a1020"/>
+    <line x1="31" y1="219" x2="53" y2="219" stroke="currentColor" stroke-width="1" opacity=".35"/>
+    <line x1="31" y1="224" x2="49" y2="224" stroke="currentColor" stroke-width="1" opacity=".2"/>
+    <line x1="31" y1="229" x2="51" y2="229" stroke="currentColor" stroke-width="1" opacity=".28"/>
+    <line x1="31" y1="234" x2="47" y2="234" stroke="currentColor" stroke-width="1" opacity=".18"/>
+    <circle cx="42" cy="244" r="4" fill="currentColor" opacity=".45"/>
+    <!-- neck -->
+    <rect x="87" y="122" width="26" height="22" rx="7" fill="url(#sg)"/>
+    <!-- head -->
+    <ellipse cx="100" cy="95" rx="43" ry="47" fill="url(#sg)"/>
+    <!-- hair -->
+    <ellipse cx="100" cy="57" rx="43" ry="23" fill="url(#hg)"/>
+    <ellipse cx="100" cy="51" rx="36" ry="17" fill="#231508"/>
+    <ellipse cx="61" cy="84" rx="11" ry="21" fill="url(#hg)"/>
+    <ellipse cx="139" cy="84" rx="11" ry="21" fill="url(#hg)"/>
+    <path d="M74,51 Q100,39 126,51" fill="none" stroke="#3d2510" stroke-width="1.5" opacity=".35"/>
+    <ellipse cx="61" cy="94" rx="10" ry="7" fill="url(#sg)" opacity=".55"/>
+    <ellipse cx="139" cy="94" rx="10" ry="7" fill="url(#sg)" opacity=".55"/>
+    <!-- ears -->
+    <ellipse cx="57" cy="98" rx="7" ry="10" fill="url(#sg)"/>
+    <ellipse cx="143" cy="98" rx="7" ry="10" fill="url(#sg)"/>
+    <ellipse cx="58" cy="98" rx="4" ry="6" fill="#d4906a" opacity=".3"/>
+    <ellipse cx="142" cy="98" rx="4" ry="6" fill="#d4906a" opacity=".3"/>
+    <!-- eyes -->
+    <ellipse cx="83" cy="95" rx="9" ry="8" fill="white"/>
+    <ellipse cx="83" cy="96" rx="6" ry="6" fill="#2a1505"/>
+    <ellipse cx="83" cy="96" rx="4" ry="4" fill="#140a02"/>
+    <ellipse cx="85" cy="93" rx="1.5" ry="1.5" fill="white" opacity=".9"/>
+    <ellipse cx="117" cy="95" rx="9" ry="8" fill="white"/>
+    <ellipse cx="117" cy="96" rx="6" ry="6" fill="#2a1505"/>
+    <ellipse cx="117" cy="96" rx="4" ry="4" fill="#140a02"/>
+    <ellipse cx="119" cy="93" rx="1.5" ry="1.5" fill="white" opacity=".9"/>
+    <!-- eyebrows -->
+    <path d="M75,83 Q83,79 91,83" fill="none" stroke="#231508" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M109,83 Q117,79 125,83" fill="none" stroke="#231508" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- nose -->
+    <path d="M97,106 Q94,115 97,118 Q100,120 103,118 Q106,115 103,106" fill="none" stroke="#c07850" stroke-width="1.5" opacity=".45" stroke-linecap="round"/>
+    <!-- stubble shadow -->
+    <ellipse cx="100" cy="122" rx="23" ry="10" fill="rgba(35,21,8,.12)"/>
+    <!-- mouth -->
+    <path id="mp" d="M90,127 Q100,132 110,127" fill="none" stroke="#b06840" stroke-width="2" stroke-linecap="round"/>
+    <!-- VAXA badge -->
+    <circle cx="125" cy="168" r="9" fill="currentColor" opacity=".8"/>
+    <circle cx="125" cy="168" r="7" fill="rgba(0,0,0,.4)"/>
+    <text x="125" y="172" text-anchor="middle" font-size="8" fill="white" font-family="monospace" font-weight="bold">V</text>
+  </svg>
+  <div id="charLabel">ARGA RIFKY NUGRAHA</div>
+</div>
+
+<!-- CHOICES -->
+<div id="choices"></div>
+
+<!-- DIALOGUE -->
+<div id="dlgArea">
+  <!-- Mobile-only connect row -->
+  <div id="mobileConnect">
+    <span class="mcb-label">CONNECT</span>
+    <a class="mcb" href="https://linkedin.com/in/argarifky" target="_blank">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      LinkedIn
+    </a>
+    <a class="mcb" href="mailto:argarifky@gmail.com?subject=Collaboration%20Inquiry%20via%20ARGA.EXE&body=Hi%20Arga%2C%0A%0AI%20found%20your%20interactive%20profile%20and%20would%20love%20to%20connect%20about%20a%20potential%20collaboration.%0A%0A" target="_blank">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Collaborate
+    </a>
+  </div>
+  <div id="nameBox"></div>
+  <div id="dlgBox">
+    <div class="da da-m" id="dlgAccent"></div>
+    <div id="dlgText"></div>
+    <div id="dlgContinue" class="dc-m">▼ CLICK</div>
+  </div>
+</div>
+
+<!-- CONNECT BAR — shown during game scenes -->
+<div id="connectBar">
+  <div class="cb-label">CONNECT WITH ARGA</div>
+  <a class="cb-btn cb-li" href="https://linkedin.com/in/argarifky" target="_blank">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+    LinkedIn
+  </a>
+  <a class="cb-btn cb-em" href="mailto:argarifky@gmail.com?subject=Collaboration%20Inquiry%20via%20ARGA.EXE&body=Hi%20Arga%2C%0A%0AI%20found%20your%20interactive%20profile%20and%20would%20love%20to%20connect%20about%20a%20potential%20collaboration.%0A%0A" target="_blank">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    Collaborate
+  </a>
+</div>
+
+<!-- CHAPTER BANNER -->
+<div id="chBanner"><div class="cbi"><div class="cbe" id="cbe"></div><div class="cbt" id="cbt"></div><div class="cbs" id="cbs"></div></div></div>
+
+<!-- ACHIEVEMENT -->
+<div id="achPop">
+  <div id="achIcon">🏆</div>
+  <div><div class="abl">ACHIEVEMENT UNLOCKED</div><div class="abt" id="achT">-</div><div class="abd" id="achD">-</div></div>
+</div>
+
+<!-- CHAPTER BANNER -->
+<div id="chBanner"><div class="cbi"><div class="cbe" id="cbe"></div><div class="cbt" id="cbt"></div><div class="cbs" id="cbs"></div></div></div>
+
+<!-- ACHIEVEMENT -->
+<div id="achPop">
+  <div id="achIcon">🏆</div>
+  <div><div class="abl">ACHIEVEMENT UNLOCKED</div><div class="abt" id="achT">-</div><div class="abd" id="achD">-</div></div>
+</div>
+
+<!-- GALLERY MODAL -->
+
+<script>
+// ═══════════════════════════
+// CANVAS BG
+// ═══════════════════════════
+const cv=document.getElementById('bgCanvas'),cx=cv.getContext('2d');
+let bgT=0,bgM='m';
+function resizeCv(){cv.width=innerWidth;cv.height=innerHeight}
+resizeCv();window.addEventListener('resize',resizeCv);
+
+const BG={
+  f:(cx,w,h,t)=>{
+    let g=cx.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,'#0d0608');g.addColorStop(.5,'#120a0a');g.addColorStop(1,'#1a0f0a');
+    cx.fillStyle=g;cx.fillRect(0,0,w,h);
+    let eg=cx.createRadialGradient(w/2,h*.7,0,w/2,h*.7,w*.55);
+    eg.addColorStop(0,'rgba(255,107,53,.1)');eg.addColorStop(1,'transparent');
+    cx.fillStyle=eg;cx.fillRect(0,0,w,h);
+    [[0,.32,.07,.6],[.06,.18,.06,.55],[.11,.4,.07,.6],[.17,.12,.05,.55],[.21,.28,.08,.6],[.28,.22,.06,.55],[.33,.38,.07,.6],[.39,.15,.07,.55],[.45,.3,.06,.6],[.5,.42,.07,.55],[.56,.2,.08,.6],[.63,.1,.06,.55],[.68,.35,.07,.6],[.74,.16,.08,.55],[.81,.38,.06,.6],[.86,.24,.07,.55],[.92,.15,.07,.6]].forEach(([x,ty,bw,bt])=>{
+      let bx=x*w,by=ty*h,bww=bw*w,bh=(bt-ty)*h;
+      cx.fillStyle='#0a0505';cx.fillRect(bx,by,bww,bh);
+      for(let wy=by+10;wy<by+bh-10;wy+=16)for(let wx=bx+6;wx<bx+bww-6;wx+=12){
+        if(Math.sin(t*.4+wx*.02+wy*.03)>.2){cx.fillStyle=`rgba(255,${110+Math.floor(Math.sin(t+wx)*35)},30,${.07+Math.sin(t*.6+wx)*.05})`;cx.fillRect(wx,wy,7,10)}
+      }
+    });
+    for(let i=0;i<6;i++){let ex=((i*137+t*10)%w),ey=h*.7-((t*18+i*55)%(h*.45));cx.fillStyle=`rgba(255,${90+i*12},20,${.35+Math.sin(t+i)*.25})`;cx.beginPath();cx.arc(ex,ey,1+Math.sin(t+i)*.5,0,Math.PI*2);cx.fill()}
+    let hg=cx.createLinearGradient(0,h*.65,0,h);hg.addColorStop(0,'transparent');hg.addColorStop(1,'rgba(255,80,20,.05)');cx.fillStyle=hg;cx.fillRect(0,h*.65,w,h*.35);
+  },
+  m:(cx,w,h,t)=>{
+    let g=cx.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,'#04080f');g.addColorStop(.4,'#060d1a');g.addColorStop(1,'#0a1428');
+    cx.fillStyle=g;cx.fillRect(0,0,w,h);
+    for(let i=0;i<70;i++){let sx=(i*113.7)%w,sy=(i*89.3)%(h*.5);let ss=.2+Math.sin(t*.3+i)*.25,so=.2+Math.sin(t*.5+i*.7)*.35;cx.fillStyle=`rgba(180,220,255,${so})`;cx.beginPath();cx.arc(sx,sy,ss,0,Math.PI*2);cx.fill()}
+    for(let i=0;i<3;i++){let ag=cx.createLinearGradient(0,h*(.15+i*.07),0,h*(.32+i*.07));ag.addColorStop(0,'transparent');ag.addColorStop(.5,`rgba(0,212,255,${.035+Math.sin(t*.22+i*.8)*.02})`);ag.addColorStop(1,'transparent');cx.fillStyle=ag;cx.fillRect(0,0,w,h)}
+    cx.fillStyle='#050d1a';cx.fillRect(w*.08,h*.3,w*.84,h*.5);cx.fillRect(w*.3,h*.14,w*.4,h*.17);
+    for(let i=0;i<10;i++){cx.fillStyle='#06101e';cx.fillRect(w*.1+i*w*.084,h*.3,w*.016,h*.5)}
+    for(let r=0;r<3;r++)for(let c=0;c<8;c++){let lit=Math.sin(t*.3+r*3+c)>.3;cx.fillStyle=lit?'rgba(0,180,255,.1)':'rgba(0,120,200,.03)';cx.fillRect(w*.11+c*w*.094,h*.34+r*h*.08,w*.054,h*.055)}
+  },
+  b:(cx,w,h,t)=>{
+    let g=cx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#040810');g.addColorStop(1,'#060d18');
+    cx.fillStyle=g;cx.fillRect(0,0,w,h);
+    cx.strokeStyle='rgba(168,85,247,.055)';cx.lineWidth=1;
+    for(let x=0;x<w;x+=60){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,h);cx.stroke()}
+    for(let y=0;y<h;y+=60){cx.beginPath();cx.moveTo(0,y);cx.lineTo(w,y);cx.stroke()}
+    [[.1,.4,.4,'h'],[.5,.4,.2,'v'],[.2,.6,.3,'h'],[.5,.3,.35,'h'],[.7,.2,.25,'v'],[.7,.45,.2,'h'],[.15,.7,.5,'h']].forEach((tr,i)=>{
+      let p=(t*.14+i*.3)%1,lx=tr[0]*w,ly=tr[1]*h,ll=(tr[3]==='h'?tr[2]*w:tr[2]*h);
+      cx.strokeStyle='rgba(168,85,247,.08)';cx.lineWidth=1;cx.beginPath();
+      tr[3]==='h'?(cx.moveTo(lx,ly),cx.lineTo(lx+ll,ly)):(cx.moveTo(lx,ly),cx.lineTo(lx,ly+ll));cx.stroke();
+      let sp=p*ll;cx.strokeStyle=`rgba(168,85,247,${.45+Math.sin(t+i)*.25})`;cx.lineWidth=1.5;cx.beginPath();
+      tr[3]==='h'?(cx.moveTo(lx+sp-25,ly),cx.lineTo(lx+sp,ly)):(cx.moveTo(lx,ly+sp-25),cx.lineTo(lx,ly+sp));cx.stroke();
+    });
+    [[.3,.35],[.5,.4],[.7,.45],[.2,.6],[.65,.7]].forEach(([nx,ny],i)=>{
+      let p=.25+Math.sin(t*.8+i)*.18;cx.fillStyle=`rgba(168,85,247,${p})`;cx.beginPath();cx.arc(nx*w,ny*h,4,0,Math.PI*2);cx.fill();
+      cx.strokeStyle=`rgba(168,85,247,${p*.5})`;cx.lineWidth=1;cx.beginPath();cx.arc(nx*w,ny*h,8,0,Math.PI*2);cx.stroke();
+    });
+  },
+  raw:(cx,w,h,t)=>{
+    let g=cx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#030508');g.addColorStop(1,'#080c14');
+    cx.fillStyle=g;cx.fillRect(0,0,w,h);
+    for(let i=0;i<35;i++){let rx=((i*173+t*75)%w),ry=((i*97+t*190)%(h*.68));cx.strokeStyle='rgba(100,140,200,.07)';cx.lineWidth=1;cx.beginPath();cx.moveTo(rx,ry);cx.lineTo(rx-3,ry+14);cx.stroke()}
+    [[0,.38,.09,.68],[.08,.24,.07,.63],[.14,.44,.07,.68],[.2,.29,.08,.63],[.27,.17,.07,.68],[.33,.39,.07,.63],[.39,.27,.08,.68],[.46,.14,.07,.63],[.52,.37,.07,.68],[.58,.21,.08,.63],[.65,.39,.07,.68],[.72,.29,.07,.63],[.78,.17,.08,.68],[.85,.41,.07,.63],[.91,.25,.07,.68]].forEach(([x,ty,bw,bt])=>{
+      let bx=x*w,by=ty*h,bww=bw*w,bh=(bt-ty)*h;cx.fillStyle='#060a14';cx.fillRect(bx,by,bww,bh);
+    });
+    cx.fillStyle='#0c1428';cx.fillRect(0,h*.65,w,h*.35);cx.strokeStyle='rgba(255,255,255,.05)';cx.lineWidth=1;cx.beginPath();cx.moveTo(0,h*.65);cx.lineTo(w,h*.65);cx.stroke();
+    let lg=cx.createRadialGradient(w/2,h*.58,0,w/2,h*.58,75);lg.addColorStop(0,`rgba(255,200,100,${.1+Math.sin(t*.5)*.04})`);lg.addColorStop(1,'transparent');cx.fillStyle=lg;cx.fillRect(0,0,w,h);
+  }
+};
+
+// ═══════════════════════════
+// PARTICLES
+// ═══════════════════════════
+function spawnP(m){
+  const p=document.getElementById('particles');p.innerHTML='';
+  const cols={f:['#ff6b35','#ff9550'],m:['#00d4ff','#38bdf8'],b:['#a855f7','#c084fc']};
+  const c=cols[m]||cols.m;
+  for(let i=0;i<18;i++){
+    const el=document.createElement('div');
+    const sz=1+Math.random()*2;
+    el.style.cssText=`position:absolute;border-radius:50%;width:${sz}px;height:${sz}px;left:${Math.random()*100}%;bottom:-8px;background:${c[i%c.length]};animation:floatUp ${8+Math.random()*10}s ${Math.random()*8}s linear infinite;opacity:0`;
+    p.appendChild(el);
+  }
+}
+
+// ═══════════════════════════
+// STATE
+// ═══════════════════════════
+const G={mode:'m',xp:0,lv:1,disc:0,achN:0,ach:[false,false,false,false,false,false,false],visited:new Set(),tlIdx:0,awaitClick:false,clickFn:null,typeTimer:null};
+const XPL=180;
+const MC={f:'#ff6b35',m:'#00d4ff',b:'#a855f7'};
+
+// ═══════════════════════════
+// MODE APPLY
+// ═══════════════════════════
+function applyMode(m){
+  G.mode=m;bgM=m;
+  const labels={f:'FOUNDER',m:'MENTOR',b:'BUILDER'};
+  document.getElementById('hudMode').className=`hm-${m}`;
+  document.getElementById('hudMode').textContent=labels[m];
+  document.getElementById('xpBar').className=`xpi xpi-${m}`;
+  document.getElementById('dlgAccent').className=`da da-${m}`;
+  document.getElementById('dlgContinue').className=`dc-${m}`;
+  document.getElementById('charLabel').className=`cl-${m}`;
+  const sv=document.getElementById('charSvg');
+  sv.setAttribute('color',MC[m]);
+  sv.className=`mode-${m}`;
+  ['F','M','B'].forEach(t=>{const tab=document.getElementById('tab'+t);tab.className='mtab'+(t.toLowerCase()===m?' a'+m:'')});
+  spawnP(m);
+  // update charSvg filter via style
+  const glows={f:'drop-shadow(0 0 28px rgba(255,107,53,.3))',m:'drop-shadow(0 0 28px rgba(0,212,255,.25))',b:'drop-shadow(0 0 28px rgba(168,85,247,.3))'};
+  sv.style.filter=`drop-shadow(0 20px 50px rgba(0,0,0,.9)) ${glows[m]}`;
+}
+
+// ═══════════════════════════
+// MOUTH ANIMATION
+// ═══════════════════════════
+let mTimer=null;
+const mp=document.getElementById('mp');
+function setTalk(on){
+  const sv=document.getElementById('charSvg');
+  if(on){sv.classList.add('talking');if(!mTimer)mTimer=setInterval(()=>{mp.setAttribute('d',Math.random()>.45?'M90,127 Q100,135 110,127':'M90,127 Q100,132 110,127')},160);}
+  else{sv.classList.remove('talking');clearInterval(mTimer);mTimer=null;mp.setAttribute('d','M90,127 Q100,132 110,127')}
+}
+
+// ═══════════════════════════
+// CHAPTER BANNER
+// ═══════════════════════════
+function showBanner(eye,title,sub,col,cb){
+  const b=document.getElementById('chBanner');
+  document.getElementById('cbe').textContent=eye;
+  const ct=document.getElementById('cbt');ct.textContent=title;ct.className=`cbt cbt-${col}`;
+  document.getElementById('cbs').textContent=sub||'';
+  b.classList.add('on');
+  setTimeout(()=>{b.classList.remove('on');setTimeout(cb,460)},2400);
+}
+
+// ═══════════════════════════
+// ACHIEVEMENT
+// ═══════════════════════════
+function showAch(id,icon,title,desc){
+  if(G.ach[id])return;G.ach[id]=true;G.achN++;
+  document.getElementById('achIcon').textContent=icon;
+  document.getElementById('achT').textContent=title;
+  document.getElementById('achD').textContent=desc;
+  const p=document.getElementById('achPop');p.classList.add('on');
+  gainXP(120);document.getElementById('hudAch').textContent=G.achN;
+  setTimeout(()=>p.classList.remove('on'),3800);
+}
+
+// ═══════════════════════════
+// XP
+// ═══════════════════════════
+function gainXP(n){
+  G.xp+=n;const max=G.lv*XPL;
+  if(G.xp>=max){G.xp-=max;G.lv++;document.getElementById('hudLv').textContent=String(G.lv).padStart(2,'0');document.getElementById('statLv').textContent=String(G.lv).padStart(2,'0')}
+  document.getElementById('xpBar').style.width=Math.min((G.xp/(G.lv*XPL))*100,100)+'%';
+}
+
+// ═══════════════════════════
+// TIMELINE
+// ═══════════════════════════
+function advTL(){
+  if(G.tlIdx>0){const prev=document.getElementById('tl'+(G.tlIdx-1));if(prev){prev.classList.remove('cur-f','cur-m','cur-b');prev.classList.add('vis')}}
+  const d=document.getElementById('tl'+G.tlIdx);if(d)d.className=`tld cur-${G.mode}`;
+  G.tlIdx=Math.min(G.tlIdx+1,6);
+}
+
+// ═══════════════════════════
+// TYPEWRITER
+// ═══════════════════════════
+const dlgText=document.getElementById('dlgText');
+const nameBox=document.getElementById('nameBox');
+const dlgCont=document.getElementById('dlgContinue');
+
+function fmt(t,type){
+  if(type==='nar')return`<span class="t-nar">${t}</span>`;
+  if(type==='hi')return`<span class="t-hi">▸ ${t}</span>`;
+  if(type==='sys')return`<span class="t-sys">${t}</span>`;
+  if(type==='raw')return`<span class="t-raw">${t}</span>`;
+  return t;
+}
+function typeW(text,type,cb){
+  if(G.typeTimer){clearInterval(G.typeTimer);G.typeTimer=null}
+  dlgText.innerHTML='';let i=0;
+  const isC=type==='char';setTalk(isC);
+  G.typeTimer=setInterval(()=>{i++;dlgText.innerHTML=fmt(text.slice(0,i),type);if(i>=text.length){clearInterval(G.typeTimer);G.typeTimer=null;setTalk(false);if(cb)cb()}},isC?20:12);
+}
+function showName(name,m){
+  if(!name){nameBox.style.display='none';return}
+  nameBox.style.display='block';nameBox.textContent=name;nameBox.className=`nb-${m}`;
+}
+document.getElementById('dlgBox').addEventListener('click',()=>{
+  if(G.awaitClick&&G.clickFn){G.awaitClick=false;dlgCont.style.display='none';G.clickFn()}
+});
+
+// ═══════════════════════════
+// SCENE ENGINE
+// ═══════════════════════════
+const choicesEl=document.getElementById('choices');
+const charStage=document.getElementById('charStage');
+
+function runScene(id){
+  if(id==='__menu__'){returnMenu();return}
+  const sc=SCENES[id];if(!sc)return;
+  if(sc.mode)applyMode(sc.mode);
+  if(sc.bg)bgM=sc.bg;
+  sc.char===false?charStage.classList.add('hidden'):charStage.classList.remove('hidden');
+  document.getElementById('statsPanel').classList.add('on');
+  document.getElementById('timeline').classList.add('on');
+  showConnectBar(true);
+  if(sc.disc&&!G.visited.has(id)){G.visited.add(id);G.disc++;document.getElementById('hudDisc').textContent=G.disc}
+  if(sc.ach&&!G.ach[sc.ach.id])setTimeout(()=>showAch(sc.ach.id,sc.ach.icon,sc.ach.title,sc.ach.desc),700);
+  advTL();
+  choicesEl.innerHTML='';choicesEl.classList.remove('on');
+  nameBox.style.display='none';dlgText.innerHTML='';dlgCont.style.display='none';
+  const go=()=>runLines(sc);
+  sc.chapter?showBanner(sc.chapter.eye,sc.chapter.title,sc.chapter.sub,sc.chapter.col||G.mode,go):go();
+}
+
+function runLines(sc){
+  const lines=sc.lines||[];let idx=0;
+  const next=()=>{
+    if(idx>=lines.length){setTimeout(()=>showChoices(sc.choices||[]),200);return}
+    const ln=lines[idx++];
+    if(ln.t==='pause'){setTimeout(next,ln.ms||500);return}
+    showName(ln.name||null,ln.t==='char'?G.mode:'sys');
+    dlgCont.style.display='none';
+    typeW(ln.s,ln.t,()=>{dlgCont.style.display='block';G.awaitClick=true;G.clickFn=next});
+  };
+  next();
+}
+
+function showChoices(list){
+  choicesEl.innerHTML='';
+  list.forEach(c=>{
+    const b=document.createElement('button');
+    b.className=`chb chb-${G.mode}`;
+    b.innerHTML=`<span class="cha">▶</span>${c.t}`;
+    b.onclick=()=>{
+      choicesEl.classList.remove('on');gainXP(c.xp||50);
+      if(c.mode)applyMode(c.mode);
+      setTimeout(()=>runScene(c.n),200);
+    };
+    choicesEl.appendChild(b);
+  });
+  setTimeout(()=>choicesEl.classList.add('on'),80);
+}
+
+// ═══════════════════════════
+// ENTRY POINTS
+// ═══════════════════════════
+function startPath(m){
+  const el=document.getElementById('intro');el.style.opacity='0';
+  setTimeout(()=>el.style.display='none',800);
+  applyMode(m);G.tlIdx=0;
+  const map={f:'founder_start',m:'mentor_start',b:'builder_start'};
+  setTimeout(()=>runScene(map[m]),300);
+}
+function switchMode(m){
+  applyMode(m);G.tlIdx=0;
+  for(let i=0;i<7;i++){const d=document.getElementById('tl'+i);if(d)d.className='tld'}
+  const map={f:'founder_start',m:'mentor_start',b:'builder_start'};
+  runScene(map[m]);
+}
+function returnMenu(){
+  const el=document.getElementById('intro');el.style.display='flex';el.style.opacity='0';
+  setTimeout(()=>el.style.opacity='1',30);
+  charStage.classList.add('hidden');
+  choicesEl.innerHTML='';dlgText.innerHTML='';nameBox.style.display='none';
+  document.getElementById('statsPanel').classList.remove('on');
+  document.getElementById('timeline').classList.remove('on');
+  showConnectBar(false);
+  G.tlIdx=0;for(let i=0;i<7;i++){const d=document.getElementById('tl'+i);if(d)d.className='tld'}
+}
+
+// ═══════════════════════════
+// SCENES
+// ═══════════════════════════
+const SCENES={
+
+  founder_start:{mode:'f',disc:true,char:true,
+    chapter:{eye:'PATH 01 · FOUNDER',title:'THE FOUNDER',sub:'Building from nothing. Twice.',col:'f'},
+    lines:[
+      {t:'sys',s:'> Accessing FOUNDER profile...'},
+      {t:'nar',s:'He is standing on a Malang rooftop. VAXA is open on his phone. The city hums below.'},
+      {t:'char',s:"A founder is not just someone who starts a company. It is someone who bets on a version of the future that does not exist yet.",name:'ARGA'},
+      {t:'char',s:"I have done that twice. Once with a solar company. Once with VAXA. The second time was harder — because I knew exactly what I was getting into.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'Tell me about PT Elektrina — the solar company',n:'solar_story',xp:60},
+      {t:'The VAXA launch — what was it really like?',n:'vaxa_raw',xp:80},
+      {t:'What does it take to be a founder?',n:'founder_phil',xp:55},
+    ]},
+
+  solar_story:{disc:true,char:true,bg:'f',
+    ach:{id:0,icon:'⚡',title:'SOLAR PUNK',desc:'The energy chapter revealed'},
+    lines:[
+      {t:'sys',s:'> PT Elektrina Energi Indonesia · Director · Aug 2018 – Dec 2021'},
+      {t:'char',s:"I built a solar power installation company in Malang. Real projects, real clients, full P&L ownership.",name:'ARGA'},
+      {t:'hi',s:'⚡ Solar power installation across Malang region'},
+      {t:'hi',s:'🤝 Client network, vendor relations, project delivery'},
+      {t:'char',s:"That company taught me what founders actually feel — not the glamour version. Cash flow stress at 2am. A client call you are not ready for. A project delayed by two weeks.",name:'ARGA'},
+      {t:'char',s:"Most mentors teach from textbooks. I teach from that 2am feeling.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'Why did you close it?',n:'solar_close',xp:70},
+      {t:'Jump to the VAXA story',n:'vaxa_raw',xp:75},
+    ]},
+
+  solar_close:{disc:true,char:true,bg:'f',
+    lines:[
+      {t:'nar',s:'He pauses. This part is harder to tell.'},
+      {t:'char',s:"COVID-19 hit in 2020. The installation business slowed. Projects froze. Then I had to be honest with myself — we were not reaching product-market fit.",name:'ARGA'},
+      {t:'raw',s:'The market was not there yet. The pandemic made that undeniable.'},
+      {t:'char',s:"Closing Elektrina was not failure. It was the right data-driven decision. You cannot keep burning energy on something the market is not ready for.",name:'ARGA'},
+      {t:'char',s:"But while this was happening, I was also helping the Business Incubator at Brawijaya University in 2021. And something clicked.",name:'ARGA'},
+      {t:'hi',s:'💡 Parallel work at UB Incubator 2021 → discovered passion for startup development'},
+      {t:'char',s:"That was the pivot moment. Not failure pushing me out — passion pulling me in.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'How did the mentoring path open up?',n:'mentor_entry',xp:70},
+      {t:'Tell me the VAXA launch story',n:'vaxa_raw',xp:80},
+    ]},
+
+  mentor_entry:{disc:true,char:true,bg:'f',
+    lines:[
+      {t:'sys',s:'> 2021: First formal mentoring engagements'},
+      {t:'char',s:"By 2021 I was running three programs simultaneously — BRIN PPBT, YEB at Brawijaya, and the Kemensos social entrepreneurship program.",name:'ARGA'},
+      {t:'hi',s:'🔬 PPBT BRIN — tech-based early-stage startups'},
+      {t:'hi',s:'🎓 YEB — Youth Entrepreneur Brawijaya'},
+      {t:'hi',s:'📋 Prokus Kemensos — Social Entrepreneurship Program'},
+      {t:'char',s:"By the end of that year I knew: this was the work. Helping founders see what they cannot see from inside their own problems.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'Then the VAXA decision came',n:'vaxa_raw',xp:80},
+      {t:'Switch to the MENTOR path',n:'mentor_start',xp:40,mode:'m'},
+    ]},
+
+  vaxa_raw:{disc:true,char:true,bg:'raw',
+    ach:{id:1,icon:'🌑',title:'NO SAFETY NET',desc:'The raw VAXA launch story'},
+    chapter:{eye:'THE PIVOT MOMENT',title:'VAXA',sub:'August 2025. No plan B.',col:'f'},
+    lines:[
+      {t:'nar',s:'The background darkens. Rain on glass. March 2025.'},
+      {t:'char',s:"I left Brawijaya University in March 2025. No backup offer. No client retainer locked in. Just a name — VAXA — and a framework I had been building in my head for years.",name:'ARGA'},
+      {t:'raw',s:'That first month was the loneliest I have ever felt professionally.'},
+      {t:'char',s:"You know what you are building. You know it has value. But there is a gap between knowing and proving. Living in that gap is the real founder experience.",name:'ARGA'},
+      {t:'char',s:"I monetized early — digital products, 1-on-1 mentoring, collaboration revenue. Not because the vision was small. Because survival is strategy.",name:'ARGA'},
+      {t:'hi',s:'💰 Early revenue: digital products + 1-on-1 mentoring + collaborations'},
+      {t:'hi',s:'🏗️ Concurrent: PENS Sky Venture mentor, UD Impact Korea Coach Partner'},
+      {t:'char',s:"Six months in, VAXA is real. The ecosystem is forming. But I will not pretend the launch was clean. It was not.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'What is VAXA actually building?',n:'vaxa_vision',xp:70},
+      {t:'The Korea connection — how did that happen?',n:'korea',xp:65},
+      {t:'Switch to the MENTOR path',n:'mentor_start',xp:40,mode:'m'},
+    ]},
+
+  vaxa_vision:{disc:true,char:true,bg:'f',
+    ach:{id:2,icon:'🌏',title:'ECOSYSTEM BUILDER',desc:'The VAXA vision unlocked'},
+    lines:[
+      {t:'sys',s:'> VAXA · Venture Ecosystem Orchestrator · Aug 2025 – Present'},
+      {t:'char',s:"Venture Ecosystem Orchestrator. Not incubator. Not accelerator. Orchestrator — I connect all the pieces that make founders succeed.",name:'ARGA'},
+      {t:'char',s:"I build the rails. Others run the trains.",name:'ARGA'},
+      {t:'hi',s:'🏗️ Services: Venture Building · Incubation · Acceleration'},
+      {t:'hi',s:'🤝 Partners: Universities · Government · Industry stakeholders'},
+      {t:'hi',s:'🎯 Vision: Regional → National → Global catalyst'},
+      {t:'char',s:"Malang is the launchpad. Not the destination.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'Explore the MENTOR side',n:'mentor_start',xp:55,mode:'m'},
+      {t:'Explore the BUILDER side',n:'builder_start',xp:55,mode:'b'},
+      {t:'What defines Arga beyond the resume?',n:'defines',xp:85},
+    ]},
+
+  founder_phil:{disc:true,char:true,bg:'f',
+    lines:[
+      {t:'char',s:"Most people wait until conditions are perfect. Founders accept that conditions will never be perfect.",name:'ARGA'},
+      {t:'char',s:"I have been a retail manager, a consultant, a solar director, a mentor, a university manager. Then a founder again.",name:'ARGA'},
+      {t:'raw',s:'Every pivot felt like a restart. It was not. It was compounding.'},
+      {t:'char',s:"Everything I built before VAXA became the foundation for VAXA. You never waste years. You invest them.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'The VAXA launch — tell me raw',n:'vaxa_raw',xp:80},
+      {t:'Switch to MENTOR path',n:'mentor_start',xp:45,mode:'m'},
+    ]},
+
+  mentor_start:{mode:'m',disc:true,char:true,
+    chapter:{eye:'PATH 02 · MENTOR',title:'THE MENTOR',sub:'100+ founders. 10+ years. One methodology.',col:'m'},
+    lines:[
+      {t:'sys',s:'> Accessing MENTOR profile...'},
+      {t:'nar',s:'The city lights shift cooler. A workshop. A room full of founders looking at him.'},
+      {t:'char',s:"Mentoring is not advice-giving. Advice is cheap. Anyone can give it.",name:'ARGA'},
+      {t:'char',s:"Real mentoring is helping someone see the gap between what they believe and what is actually true. That takes trust. And trust takes time.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'How did you get into mentoring?',n:'mentor_origin',xp:55},
+      {t:'Tell me about the 100+ startups you helped',n:'mentor_scale',xp:65},
+      {t:'What is your actual methodology?',n:'mentor_method',xp:70},
+    ]},
+
+  mentor_origin:{disc:true,char:true,bg:'m',
+    lines:[
+      {t:'nar',s:'Brawijaya University. Electrical Engineering. 2009.'},
+      {t:'char',s:"I started leading before I had a title. E-Fest committee head. Student association. Engineering work camps. Organization DNA got wired in early.",name:'ARGA'},
+      {t:'hi',s:'🎓 Brawijaya University · Electrical Engineering · 2009-2014'},
+      {t:'hi',s:'📋 Leadership: E-Fest Head, KKM General Secretary, External Dept Head'},
+      {t:'char',s:"Then retail, consulting, solar energy. That is not a detour — that is what makes me a credible mentor. I have lived the problems I help founders solve.",name:'ARGA'},
+      {t:'char',s:"Then COVID hit, Elektrina closed, and working with the UB incubator in 2021 showed me where my energy actually belonged.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'When did the formal mentoring scale up?',n:'mentor_scale',xp:65},
+      {t:'Tell me about your certifications',n:'certs',xp:55},
+    ]},
+
+  mentor_scale:{disc:true,char:true,bg:'m',
+    ach:{id:3,icon:'🚀',title:'100X MENTOR',desc:'Scale of impact unlocked'},
+    lines:[
+      {t:'sys',s:'> 2021: Three simultaneous program engagements'},
+      {t:'char',s:"BRIN PPBT — scientists and engineers trying to commercialize research. The gap between great tech and viable business is massive. I help close it.",name:'ARGA'},
+      {t:'hi',s:'🔬 PPBT BRIN 2021 — tech-based early-stage startups'},
+      {t:'hi',s:'📋 YEB Brawijaya + Prokus Kemensos — 2021'},
+      {t:'hi',s:'🚀 Cumulative career impact: 100+ early-stage businesses'},
+      {t:'char',s:"By 2024 I was running BEKUP under the Ministry of Tourism, Kemenkop capacity programs, and the Startup World Cup Indonesia regional event.",name:'ARGA'},
+      {t:'char',s:"Every founder is different. Same frameworks, completely different problems. That is what keeps it interesting after 10 years.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'The Brawijaya University chapter',n:'ub_chapter',xp:65},
+      {t:'What makes your method different?',n:'mentor_method',xp:70},
+    ]},
+
+  mentor_method:{disc:true,char:true,bg:'m',
+    lines:[
+      {t:'char',s:"AWS Working Backwards changed how I design programs. Start from the outcome — what does a successful founder look like at the end? Then reverse-engineer everything.",name:'ARGA'},
+      {t:'hi',s:'☁️ Working Backwards — Amazon Web Services certification'},
+      {t:'char',s:"Most incubation programs start with curriculum. I start with the exit condition. Then build backward.",name:'ARGA'},
+      {t:'char',s:"The other layer: I do not mentor from a position of distance. I have been the person burning midnight oil on a startup that was not working. That is the baseline credibility.",name:'ARGA'},
+      {t:'hi',s:'🏆 Certified Business Incubator Manager — InfoDev & AIBI'},
+      {t:'hi',s:'📜 Certified SME Curator — BNSP'},
+      {t:'hi',s:'🎓 Coach Academy Graduate — UD Impact, South Korea'},
+    ],
+    choices:[
+      {t:'The Korea connection',n:'korea',xp:65},
+      {t:'National-level programs you ran',n:'national_programs',xp:65},
+      {t:'Switch to BUILDER path',n:'builder_start',xp:40,mode:'b'},
+    ]},
+
+  ub_chapter:{disc:true,char:true,bg:'m',
+    ach:{id:4,icon:'🏛️',title:'INSTITUTIONALIST',desc:'The UB chapter fully unlocked'},
+    chapter:{eye:'CHAPTER',title:'THE ARCHITECT',sub:'Brawijaya University · 2022-2025',col:'m'},
+    lines:[
+      {t:'sys',s:'> Jan 2022: Incubation Staff → Jan 2024: Business Incubator Manager'},
+      {t:'char',s:"I came in as staff. I left as manager. In between, I redesigned the whole machine.",name:'ARGA'},
+      {t:'hi',s:'📈 +25% program efficiency via custom SOPs he built from scratch'},
+      {t:'hi',s:'🏆 Startup World Cup Indonesia Regional — 2024'},
+      {t:'hi',s:'🏆 BEKUP Kemenparekraf — 2024'},
+      {t:'hi',s:'🏆 Kemenkop UKM Capacity Building — 2024'},
+      {t:'char',s:"The promotion happened because of outcomes, not tenure. In institutions, that distinction matters more than people admit.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'Why did you leave in 2025?',n:'ub_exit',xp:70},
+      {t:'National programs you led',n:'national_programs',xp:60},
+    ]},
+
+  ub_exit:{disc:true,char:true,bg:'raw',
+    lines:[
+      {t:'char',s:"VAXA had been forming in my head for two years while I was at UB. I knew what I needed to build. I just needed to leave the building to build it.",name:'ARGA'},
+      {t:'raw',s:'March 2025. Last day. No fanfare. Packed up, walked out, started building.'},
+      {t:'char',s:"People ask if it was scary. Yes, absolutely. But there is a point where staying becomes the scarier choice.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'The VAXA raw launch story',n:'vaxa_raw',xp:80},
+      {t:'Switch to BUILDER path',n:'builder_start',xp:40,mode:'b'},
+    ]},
+
+  national_programs:{disc:true,char:true,bg:'m',
+    lines:[
+      {t:'sys',s:'> Ministry-level program records found'},
+      {t:'hi',s:'🌐 Startup World Cup Indonesia Regional — Pegasus Tech Ventures · 2024'},
+      {t:'hi',s:'🎯 BEKUP — Ministry of Tourism & Creative Economy · 2024'},
+      {t:'hi',s:'📊 Startup Capacity Building — Ministry of Cooperatives & SMEs · 2024'},
+      {t:'hi',s:'🔬 PPBT — National Research & Innovation Agency · 2021'},
+      {t:'hi',s:'🎓 Pra-Startup — Ministry of Education & Culture · 2022'},
+      {t:'char',s:"Local, regional, national. Three tiers. Each one taught me something different about how programs need to be calibrated for context.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'The VAXA vision',n:'vaxa_vision',xp:70},
+      {t:'Switch to BUILDER path',n:'builder_start',xp:40,mode:'b'},
+    ]},
+
+  builder_start:{mode:'b',disc:true,char:true,
+    chapter:{eye:'PATH 03 · BUILDER',title:'THE BUILDER',sub:'Systems. Frameworks. Ecosystems.',col:'b'},
+    lines:[
+      {t:'sys',s:'> Accessing BUILDER profile...'},
+      {t:'nar',s:'The grid hums. Circuit traces pulse. He is designing something.'},
+      {t:'char',s:"Building is not just product. It is systems. Programs. SOPs. Frameworks that run without you.",name:'ARGA'},
+      {t:'char',s:"My whole career has been about building infrastructure that other people stand on to grow.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'What systems have you actually built?',n:'systems_built',xp:60},
+      {t:'Tell me about program design from scratch',n:'program_design',xp:65},
+      {t:'The ecosystem architecture — explain it',n:'ecosystem_arch',xp:70},
+    ]},
+
+  systems_built:{disc:true,char:true,bg:'b',
+    lines:[
+      {t:'sys',s:'> Scanning built artifacts...'},
+      {t:'hi',s:'📋 SOP library — incubation process, +25% efficiency at UB'},
+      {t:'hi',s:'🎓 Curriculum frameworks — startup stages from ideation to Series A'},
+      {t:'hi',s:'📊 Mentoring evaluation — PMF tracking, market validation scoring'},
+      {t:'hi',s:'🌐 VAXA architecture — venture building to acceleration pipeline'},
+      {t:'char',s:"An SOP is not bureaucracy. It is distributed expertise. I write them so the knowledge is not trapped in my head.",name:'ARGA'},
+      {t:'char',s:"That is the builder instinct: build things that work when you are not in the room.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'Program design process',n:'program_design',xp:65},
+      {t:'The VAXA ecosystem architecture',n:'ecosystem_arch',xp:70},
+    ]},
+
+  program_design:{disc:true,char:true,bg:'b',
+    ach:{id:5,icon:'🏗️',title:'SYSTEM ARCHITECT',desc:'The builder methodology revealed'},
+    lines:[
+      {t:'char',s:"Every program I design starts with two questions: what does a successful participant look like at the end, and what is the smallest path to get there?",name:'ARGA'},
+      {t:'char',s:"AWS Working Backwards taught me to write the press release before building the product. I write the alumni profile before writing the curriculum.",name:'ARGA'},
+      {t:'hi',s:'☁️ Working Backwards — Amazon Web Services (applied to every program)'},
+      {t:'hi',s:'🎯 Programs designed for: ideation, validation, GTM, fundraising stages'},
+      {t:'char',s:"Then I test. Iterate. Most incubation programs are static. Mine are living documents. Every cohort teaches me something.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'The ecosystem architecture',n:'ecosystem_arch',xp:70},
+      {t:'Current active projects',n:'current_projects',xp:60},
+    ]},
+
+  ecosystem_arch:{disc:true,char:true,bg:'b',
+    lines:[
+      {t:'char',s:"An ecosystem is not a network. A network is just people who know each other. An ecosystem has flows.",name:'ARGA'},
+      {t:'char',s:"Talent flows in from universities. Capital from government and VCs. Knowledge through mentors. Companies grow and give back as alumni. That is a flywheel.",name:'ARGA'},
+      {t:'hi',s:'🏛️ Universities: talent + research pipeline'},
+      {t:'hi',s:'🏛️ Government: grants, programs, regulatory access'},
+      {t:'hi',s:'💼 Industry: corporate challenges, B2B clients'},
+      {t:'hi',s:'💰 Capital: angels, VCs, public funding'},
+      {t:'char',s:"VAXA sits at the center and connects all four. That is what Venture Ecosystem Orchestrator actually means.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'Who is Arga beyond the work?',n:'defines',xp:80},
+      {t:'The Korea connection',n:'korea',xp:60},
+      {t:'Switch to FOUNDER path',n:'founder_start',xp:40,mode:'f'},
+    ]},
+
+  korea:{disc:true,char:true,
+    ach:{id:6,icon:'🌍',title:'GLOBAL PLAYER',desc:'Korea connection discovered'},
+    lines:[
+      {t:'sys',s:'> International record: UD Impact · Seoul, South Korea'},
+      {t:'char',s:"UD Impact is a social impact accelerator in Seoul. I went through their Coach Academy and graduated.",name:'ARGA'},
+      {t:'hi',s:'🇰🇷 Coach Academy Graduate — UD Impact, South Korea'},
+      {t:'hi',s:'🌍 Coach Partner — UD Impact (2026 – Present)'},
+      {t:'char',s:"Now I am embedded in their global mentor network. The scope goes way beyond East Java.",name:'ARGA'},
+      {t:'char',s:"Indonesian ecosystem builder with a Korean global network and an AWS methodology. That is not an accident. It is deliberate range.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'Current active engagements',n:'current_projects',xp:60},
+      {t:'What defines Arga?',n:'defines',xp:80},
+    ]},
+
+  current_projects:{disc:true,char:true,
+    lines:[
+      {t:'sys',s:'> Active engagements: 2025–2026'},
+      {t:'hi',s:'⚡ VAXA — Founder & Director (Aug 2025 – Present)'},
+      {t:'hi',s:'🇰🇷 Coach Partner — UD Impact, South Korea (2026 – Present)'},
+      {t:'hi',s:'🎓 Mentor & Coach — PENS Sky Venture, Surabaya (2025 – Present)'},
+      {t:'hi',s:'⚖️ Judge — Startup Ideation Bootcamp, Telkom University (2025)'},
+      {t:'char',s:"Four simultaneous. VAXA is the core. Each other engagement deliberately feeds the ecosystem VAXA is building.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'Who is Arga beyond the achievements?',n:'defines',xp:80},
+      {t:'The VAXA vision',n:'vaxa_vision',xp:60},
+    ]},
+
+  certs:{disc:true,char:true,
+    lines:[
+      {t:'sys',s:'> Credential scan complete'},
+      {t:'hi',s:'🏆 Certified Business Incubator Manager — InfoDev & AIBI'},
+      {t:'hi',s:'📜 Certified SME Curator — BNSP'},
+      {t:'hi',s:'🎓 Coach Academy Graduate — UD Impact, South Korea'},
+      {t:'hi',s:'☁️ Working Backwards Mechanism — Amazon Web Services'},
+      {t:'char',s:"The AWS one changed how I design everything. Working Backwards — from customer outcome — is now embedded in every VAXA program.",name:'ARGA'},
+    ],
+    choices:[
+      {t:'The VAXA launch story',n:'vaxa_raw',xp:75},
+      {t:'What defines you?',n:'defines',xp:80},
+    ]},
+
+  defines:{disc:true,char:true,bg:'raw',
+    lines:[
+      {t:'nar',s:'The rain quiets. He looks straight forward.'},
+      {t:'char',s:"Founder. Mentor. Builder. People ask which one is the real identity. The answer is: they are the same thing.",name:'ARGA'},
+      {t:'char',s:"A founder who has not mentored does not understand failure empathy. A mentor who has not built does not understand execution pressure. A builder who does not mentor builds things no one uses.",name:'ARGA'},
+      {t:'char',s:"I operate in all three simultaneously. That is not a contradiction. That is the point.",name:'ARGA'},
+      {t:'raw',s:'Malang, East Java. 10 years. 100+ startups. One story.'},
+      {t:'sys',s:'─────────────────────────────────────────'},
+      {t:'sys',s:'> argarifky@gmail.com'},
+      {t:'sys',s:'> linkedin.com/in/argarifky'},
+    ],
+    choices:[
+      {t:'⚡ Explore FOUNDER path',n:'founder_start',xp:30,mode:'f'},
+      {t:'🎯 Explore MENTOR path',n:'mentor_start',xp:30,mode:'m'},
+      {t:'🏗️ Explore BUILDER path',n:'builder_start',xp:30,mode:'b'},
+    ]},
+};
+
+// ═══════════════════════════
+// CONNECT BAR
+// ═══════════════════════════
+function showConnectBar(show){
+  const cb=document.getElementById('connectBar');
+  show?cb.classList.add('on'):cb.classList.remove('on');
+}
+
+// ═══════════════════════════
+// ANIMATION LOOP
+// ═══════════════════════════
+function loop(){bgT+=0.018;const r=BG[bgM]||BG.m;r(cx,cv.width,cv.height,bgT);requestAnimationFrame(loop)}
+loop();
+</script>
+</body>
+</html>
