@@ -111,6 +111,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
   box-shadow:0 0 20px rgba(168,85,247,.3),0 0 20px rgba(255,107,53,.15);
   color:var(--white);
 }
+#muteBtn{
+  display:flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:3px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  color:var(--dim);cursor:pointer;font-size:14px;
+  transition:all .2s;flex-shrink:0;
+}
+#muteBtn:hover{border-color:var(--m);color:var(--white)}
+#muteBtn.muted{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.4);color:var(--red)}
 #cvBtn{
   display:flex;align-items:center;gap:6px;
   font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;
@@ -349,71 +358,201 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
 .cb-em:hover{background:rgba(245,158,11,.22);border-color:var(--gold);box-shadow:0 0 12px rgba(245,158,11,.3)}
 .cb-btn svg{flex-shrink:0}
 
-/* ── MOBILE LAYOUT ──
-   Phone: no side panels, full width dialogue, bottom connect bar hidden
-   replaced by floating connect row at top of dialogue
-*/
+/* ═══════════════════════════════════════
+   MOBILE BOTTOM SHEET
+   On mobile we scrap the fixed side panels
+   and use a bottom sheet approach:
+   - HUD: logo + mode pill only (top)
+   - Character: center stage
+   - Dialogue + choices: scrollable bottom area
+   - Mobile action bar: stats strip + connect + links (pinned above dialogue)
+═══════════════════════════════════════ */
+
+/* Mobile action bar — hidden on desktop */
+#mobileActionBar{
+  display:none;
+  position:fixed;
+  bottom:0;left:0;right:0;
+  z-index:200;
+  flex-direction:column;
+  background:rgba(8,12,22,.97);
+  border-top:1px solid var(--border);
+}
+/* Stats strip */
+#mobileStats{
+  display:flex;align-items:center;
+  padding:6px 12px;gap:0;
+  border-bottom:1px solid var(--border);
+  overflow-x:auto;
+}
+#mobileStats::-webkit-scrollbar{display:none}
+.mstat{
+  display:flex;flex-direction:column;align-items:center;
+  padding:0 10px;border-right:1px solid var(--border);
+  flex-shrink:0;
+}
+.mstat:last-child{border-right:none}
+.mstat-val{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;line-height:1}
+.mstat-lbl{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1px;color:var(--dim);margin-top:1px}
+/* Action links row */
+#mobileActions{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 10px;
+  overflow-x:auto;
+}
+#mobileActions::-webkit-scrollbar{display:none}
+.ma-btn{
+  display:flex;align-items:center;gap:5px;
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;font-weight:700;
+  padding:7px 12px;border-radius:3px;
+  text-decoration:none;border:1px solid;
+  transition:all .2s;cursor:pointer;white-space:nowrap;flex-shrink:0;
+}
+.ma-profile{
+  color:var(--white);
+  border-color:rgba(168,85,247,.5);
+  background:linear-gradient(135deg,rgba(255,107,53,.18),rgba(168,85,247,.18));
+}
+.ma-cv{color:var(--gold);border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.1)}
+.ma-li{color:#4da3e0;border-color:rgba(77,163,224,.35);background:rgba(77,163,224,.08)}
+.ma-em{color:var(--m);border-color:rgba(0,212,255,.35);background:rgba(0,212,255,.06)}
+/* Dialogue inside mobile action bar */
+#mobileDlgWrap{
+  padding:0 10px 6px;
+  display:flex;flex-direction:column;gap:0;
+}
+#mobileDlgWrap #nameBox{margin-left:4px}
+#mobileDlgWrap #dlgBox{border-radius:0 4px 4px 4px}
+
+/* ══════════════════════════════════════
+   MOBILE — full bottom sheet redesign
+   Layout: slim HUD → char stage → mobile action bar (pinned bottom)
+   Mobile action bar contains: stats strip + action links + dialogue + choices
+══════════════════════════════════════ */
+
+/* Mobile action bar — hidden on desktop */
+#mobileActionBar{
+  display:none;
+  position:fixed;
+  bottom:0;left:0;right:0;
+  z-index:200;
+  flex-direction:column;
+  background:rgba(8,12,22,.98);
+  border-top:2px solid var(--border);
+  max-height:70vh;
+  overflow:hidden;
+}
+/* Stats strip */
+#mobileStats{
+  display:flex;align-items:stretch;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.mstat{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:6px 4px;border-right:1px solid var(--border);
+}
+.mstat:last-child{border-right:none}
+.mstat-val{font-family:'Bebas Neue',sans-serif;font-size:17px;line-height:1;transition:color .4s}
+.mstat-lbl{font-family:'Space Mono',monospace;font-size:6px;letter-spacing:1px;color:var(--dim);margin-top:2px;text-align:center}
+/* Action links row */
+#mobileActions{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 10px;
+  border-bottom:1px solid var(--border);
+  overflow-x:auto;flex-shrink:0;
+}
+#mobileActions::-webkit-scrollbar{display:none}
+.ma-btn{
+  display:flex;align-items:center;gap:5px;
+  font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;font-weight:700;
+  padding:6px 10px;border-radius:3px;
+  text-decoration:none;border:1px solid;
+  transition:all .2s;cursor:pointer;white-space:nowrap;flex-shrink:0;
+}
+.ma-profile{
+  color:var(--white);border-color:rgba(168,85,247,.55);
+  background:linear-gradient(135deg,rgba(255,107,53,.2),rgba(168,85,247,.2));
+}
+.ma-cv{color:var(--gold);border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.1)}
+.ma-li{color:#4da3e0;border-color:rgba(77,163,224,.4);background:rgba(77,163,224,.08)}
+.ma-em{color:var(--m);border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.06)}
+/* Mobile dialogue inside action bar */
+#mobileDlg{
+  flex:1;overflow-y:auto;
+  padding:8px 10px 4px;
+  display:none;flex-direction:column;gap:0;
+}
+#mobileDlg.on{display:flex}
+#mobileDlg #mNameBox{
+  font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:3px;
+  padding:4px 12px;border-radius:4px 4px 0 0;
+  width:fit-content;margin-left:6px;display:none;
+}
+#mobileDlg #mNameBox.vis{display:block}
+#mobileDlg #mDlgBox{
+  background:rgba(12,18,32,.9);border:1px solid var(--border);
+  border-radius:0 4px 4px 4px;padding:10px 14px 24px;
+  position:relative;cursor:pointer;
+}
+.mda{position:absolute;top:0;left:0;right:0;height:2px;border-radius:0;transition:background .4s}
+.mda-f{background:linear-gradient(90deg,transparent,var(--f),transparent)}
+.mda-m{background:linear-gradient(90deg,transparent,var(--m),transparent)}
+.mda-b{background:linear-gradient(90deg,transparent,var(--b),transparent)}
+#mDlgText{font-size:13px;line-height:1.65;color:var(--white);min-height:40px}
+#mDlgCont{position:absolute;bottom:8px;right:12px;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;display:none;animation:blink 1s infinite}
+/* Mobile choices */
+#mobileChoices{
+  padding:4px 10px 8px;
+  display:none;flex-direction:column;gap:4px;
+  flex-shrink:0;overflow-y:auto;max-height:160px;
+}
+#mobileChoices.on{display:flex}
+.mchb{
+  background:rgba(8,12,22,.9);border:1px solid var(--border);border-left-width:3px;
+  color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:500;
+  padding:8px 12px;border-radius:0 4px 4px 0;cursor:pointer;
+  transition:all .18s;text-align:left;display:flex;align-items:center;gap:8px;
+}
+.mchb-f{border-left-color:rgba(255,107,53,.5)}
+.mchb-f:hover,.mchb-f:active{border-left-color:var(--f);background:rgba(255,107,53,.08);color:var(--white)}
+.mchb-m{border-left-color:rgba(0,212,255,.4)}
+.mchb-m:hover,.mchb-m:active{border-left-color:var(--m);background:rgba(0,212,255,.06);color:var(--white)}
+.mchb-b{border-left-color:rgba(168,85,247,.4)}
+.mchb-b:hover,.mchb-b:active{border-left-color:var(--b);background:rgba(168,85,247,.08);color:var(--white)}
+.mcha{font-family:'Space Mono',monospace;font-size:10px;opacity:.5;flex-shrink:0}
+
 @media(max-width:700px){
-  /* Collapse left tabs to icon-only strip */
-  #modeTabs{width:44px}
-  #modeTabs .mtt{display:none}
-  /* Hide right panels on mobile — shown inline instead */
+  /* Hide all desktop UI panels */
+  #modeTabs{display:none}
   #statsPanel{display:none!important}
   #connectBar{display:none!important}
-  #timeline{width:44px;display:none}
-  /* Full width content areas */
-  #charStage{left:44px;right:0}
-  #dlgArea{left:44px;right:0;height:180px;padding:0 10px 10px}
-  #choices{left:44px;right:0;bottom:180px}
-  #hud{padding:0 10px 0 56px;height:50px}
-  #hudLogo{font-size:18px}
-  #hudMode{font-size:8px;padding:2px 8px}
-  .hpill{font-size:9px}
-  .xpw{width:50px}
-  #cvBtn{padding:5px 8px;font-size:8px}
-  #cvBtn .cv-label{display:inline}
-  #profileBtn{padding:5px 8px;font-size:8px}
-  #profileBtn .cv-label{display:inline}
-  /* Mobile connect row inside dialogue area */
-  #mobileConnect{display:flex}
-  /* Ach pop */
-  #achPop{right:8px;top:60px;min-width:200px}
-  /* Character smaller */
-  #charSvg{width:120px}
-  #charLabel{font-size:7px}
-  /* Dialogue text */
-  #dlgText{font-size:13px;min-height:36px}
-  #dlgBox{padding:12px 14px 26px}
-  .chb{font-size:12px;padding:8px 12px}
-  #nameBox{font-size:9px;padding:4px 12px}
+  #timeline{display:none!important}
+  #hudRight{display:none!important}
+  /* Desktop dialogue & choices hidden on mobile */
+  #dlgArea{display:none!important}
+  #choices{display:none!important}
+  /* HUD: slim, logo + mode pill only */
+  #hud{padding:0 12px;height:44px;border-bottom:1px solid var(--border)}
+  #hudLogo{font-size:20px;letter-spacing:3px}
+  #hudMode{font-size:8px;padding:3px 8px}
+  /* Show mobile action bar */
+  #mobileActionBar{display:flex}
+  /* Character stage fills space between HUD and mobile bar */
+  #charStage{left:0;right:0;top:44px;bottom:280px}
+  #charSvg{width:130px}
+  #charLabel{font-size:7px;letter-spacing:2px}
+  /* Achievement */
+  #achPop{right:8px;top:54px;min-width:190px;padding:10px 12px}
+  #achIcon{font-size:22px}
+  .abt{font-size:14px}
 }
 @media(max-width:400px){
   #charSvg{width:100px}
-  #dlgText{font-size:12px}
-  .chb{font-size:11px}
+  #charStage{bottom:300px}
 }
 
-/* Mobile connect row — inside dialogue, hidden on desktop */
-#mobileConnect{
-  display:none;
-  align-items:center;gap:6px;
-  padding:6px 0 8px;
-  margin-bottom:4px;
-  border-bottom:1px solid var(--border);
-}
-.mcb-label{
-  font-family:'Space Mono',monospace;font-size:7px;
-  letter-spacing:2px;color:var(--dim);margin-right:2px;
-}
-.mcb{
-  display:flex;align-items:center;gap:5px;
-  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;font-weight:700;
-  padding:5px 10px;border-radius:3px;
-  text-decoration:none;border:1px solid var(--border);
-  transition:all .2s;cursor:pointer;
-}
-.mcb:first-of-type{color:#0a66c2;background:rgba(10,102,194,.1);border-color:rgba(10,102,194,.3)}
-.mcb:last-of-type{color:var(--gold);background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3)}
+#mobileConnect{display:none!important}
 </style>
 </head>
 <body>
@@ -450,6 +589,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
     <div class="hpill"><div class="xpw"><div class="xpi xpi-m" id="xpBar"></div></div></div>
     <div class="hpill">🔍<span class="v" id="hudDisc">0</span>/16</div>
     <div class="hpill">🏆<span class="v" id="hudAch">0</span>/7</div>
+    <button id="muteBtn" onclick="toggleMute()" title="Toggle music">🔊</button>
     <a id="profileBtn" href="https://argarifky.github.io/profile/" target="_blank">
       🌐 <span class="cv-label">PROFILE</span>
     </a>
@@ -636,6 +776,32 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
 
 <!-- GALLERY MODAL -->
 
+
+<!-- MOBILE ACTION BAR -->
+<div id="mobileActionBar">
+  <div id="mobileStats">
+    <div class="mstat"><div class="mstat-val" style="color:var(--gold)">100+</div><div class="mstat-lbl">STARTUPS</div></div>
+    <div class="mstat"><div class="mstat-val" style="color:var(--m)">10+</div><div class="mstat-lbl">YRS EXP</div></div>
+    <div class="mstat"><div class="mstat-val" style="color:var(--b)" id="mStatLv">01</div><div class="mstat-lbl">LEVEL</div></div>
+    <div class="mstat"><div class="mstat-val" style="color:var(--f)" id="mStatDisc">0/16</div><div class="mstat-lbl">FOUND</div></div>
+    <div class="mstat"><div class="mstat-val" style="color:var(--gold)" id="mStatAch">0/7</div><div class="mstat-lbl">ACH</div></div>
+  </div>
+  <div id="mobileActions">
+    <a class="ma-btn ma-profile" href="https://argarifky.github.io/profile/" target="_blank">🌐 PROFILE</a>
+    <a class="ma-btn ma-cv" href="https://drive.google.com/file/d/13nCB9mETLWfSbqU92jsmaNpGplWCayB9/view?usp=sharing" target="_blank">📄 CV</a>
+    <a class="ma-btn ma-li" href="https://linkedin.com/in/argarifky" target="_blank"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> LINKEDIN</a>
+    <a class="ma-btn ma-em" href="mailto:argarifky@gmail.com?subject=Collaboration%20Inquiry%20via%20ARGA.EXE&body=Hi%20Arga%2C%0A%0AI%20found%20your%20interactive%20profile%20and%20would%20love%20to%20connect.%0A%0A" target="_blank"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> EMAIL</a>
+  </div>
+  <div id="mobileDlg">
+    <div id="mNameBox"></div>
+    <div id="mDlgBox">
+      <div class="mda mda-m" id="mDlgAccent"></div>
+      <div id="mDlgText"></div>
+      <div id="mDlgCont">▼ TAP</div>
+    </div>
+  </div>
+  <div id="mobileChoices"></div>
+</div>
 <script>
 // ═══════════════════════════
 // CANVAS BG
@@ -742,6 +908,8 @@ function applyMode(m){
   sv.className=`mode-${m}`;
   ['F','M','B'].forEach(t=>{const tab=document.getElementById('tab'+t);tab.className='mtab'+(t.toLowerCase()===m?' a'+m:'')});
   spawnP(m);
+  applyMobileMode(m);
+  syncMobileStats();
   // update charSvg filter via style
   const glows={f:'drop-shadow(0 0 28px rgba(255,107,53,.3))',m:'drop-shadow(0 0 28px rgba(0,212,255,.25))',b:'drop-shadow(0 0 28px rgba(168,85,247,.3))'};
   sv.style.filter=`drop-shadow(0 20px 50px rgba(0,0,0,.9)) ${glows[m]}`;
@@ -790,6 +958,7 @@ function gainXP(n){
   G.xp+=n;const max=G.lv*XPL;
   if(G.xp>=max){G.xp-=max;G.lv++;document.getElementById('hudLv').textContent=String(G.lv).padStart(2,'0');document.getElementById('statLv').textContent=String(G.lv).padStart(2,'0')}
   document.getElementById('xpBar').style.width=Math.min((G.xp/(G.lv*XPL))*100,100)+'%';
+  syncMobileStats();
 }
 
 // ═══════════════════════════
@@ -849,7 +1018,15 @@ function runScene(id){
   advTL();
   choicesEl.innerHTML='';choicesEl.classList.remove('on');
   nameBox.style.display='none';dlgText.innerHTML='';dlgCont.style.display='none';
-  const go=()=>runLines(sc);
+  // Reset mobile dialogue
+  const mDlg=document.getElementById('mobileDlg');
+  const mCh=document.getElementById('mobileChoices');
+  if(mDlg){mDlg.classList.remove('on');document.getElementById('mDlgText').innerHTML='';}
+  if(mCh){mCh.innerHTML='';mCh.classList.remove('on');}
+  // Sync mobile stats
+  syncMobileStats();
+  applyMobileMode(G.mode);
+  const go=()=>{ if(isMobile()){ mRunLines(sc); } else { runLines(sc); } };
   sc.chapter?showBanner(sc.chapter.eye,sc.chapter.title,sc.chapter.sub,sc.chapter.col||G.mode,go):go();
 }
 
@@ -889,11 +1066,14 @@ function startPath(m){
   const el=document.getElementById('intro');el.style.opacity='0';
   setTimeout(()=>el.style.display='none',800);
   applyMode(m);G.tlIdx=0;
+  // Ensure AudioContext is created & resumed on this user gesture, then play
+  AUDIO.startAndPlay(m);
   const map={f:'founder_start',m:'mentor_start',b:'builder_start'};
   setTimeout(()=>runScene(map[m]),300);
 }
 function switchMode(m){
   applyMode(m);G.tlIdx=0;
+  AUDIO.startAndPlay(m);
   for(let i=0;i<7;i++){const d=document.getElementById('tl'+i);if(d)d.className='tld'}
   const map={f:'founder_start',m:'mentor_start',b:'builder_start'};
   runScene(map[m]);
@@ -1252,10 +1432,520 @@ function showConnectBar(show){
 }
 
 // ═══════════════════════════
-// ANIMATION LOOP
+// MOBILE ENGINE
 // ═══════════════════════════
+const isMobile = () => window.innerWidth <= 700;
+
+// Sync mobile stat counters
+function syncMobileStats(){
+  const lv = document.getElementById('mStatLv');
+  const disc = document.getElementById('mStatDisc');
+  const ach = document.getElementById('mStatAch');
+  if(lv) lv.textContent = String(G.lv).padStart(2,'0');
+  if(disc) disc.textContent = G.disc + '/16';
+  if(ach) ach.textContent = G.achN + '/7';
+}
+
+// Apply mode colors to mobile elements
+function applyMobileMode(m){
+  const mda = document.getElementById('mDlgAccent');
+  const mdc = document.getElementById('mDlgCont');
+  if(mda) mda.className = `mda mda-${m}`;
+  if(mdc) mdc.className = `dc-${m}`;
+  // Mode bar color on mobile action bar top border
+  const bar = document.getElementById('mobileActionBar');
+  if(bar){
+    const cols = {f:'var(--f)',m:'var(--m)',b:'var(--b)'};
+    bar.style.borderTopColor = cols[m] || 'var(--border)';
+  }
+  // name box color
+  const mnb = document.getElementById('mNameBox');
+  if(mnb) mnb.className = `nb-${m}` + (mnb.classList.contains('vis') ? ' vis' : '');
+}
+
+// Mobile typewriter
+let mTypeTimer = null;
+function mTypeW(text, type, cb){
+  if(mTypeTimer){clearInterval(mTypeTimer);mTypeTimer=null;}
+  const el = document.getElementById('mDlgText');
+  if(!el) return;
+  el.innerHTML = ''; let i = 0;
+  const isC = type === 'char';
+  setTalk(isC);
+  mTypeTimer = setInterval(()=>{
+    i++;
+    el.innerHTML = fmt(text.slice(0,i), type);
+    if(i >= text.length){
+      clearInterval(mTypeTimer); mTypeTimer = null;
+      setTalk(false);
+      if(cb) cb();
+    }
+  }, isC ? 20 : 12);
+}
+
+function mShowName(name, m){
+  const nb = document.getElementById('mNameBox');
+  if(!nb) return;
+  if(!name){ nb.classList.remove('vis'); return; }
+  nb.textContent = name;
+  nb.className = `nb-${m} vis`;
+}
+
+// Mobile run lines
+function mRunLines(sc){
+  const lines = sc.lines || [];
+  const dlg = document.getElementById('mobileDlg');
+  const mdc = document.getElementById('mDlgCont');
+  const mChoices = document.getElementById('mobileChoices');
+  if(dlg) dlg.classList.add('on');
+  if(mChoices){ mChoices.innerHTML=''; mChoices.classList.remove('on'); }
+  let idx = 0;
+  const next = () => {
+    if(idx >= lines.length){
+      setTimeout(()=> mShowChoices(sc.choices||[]), 200);
+      return;
+    }
+    const ln = lines[idx++];
+    if(ln.t === 'pause'){ setTimeout(next, ln.ms||500); return; }
+    mShowName(ln.name||null, ln.t==='char' ? G.mode : 'sys');
+    if(mdc) mdc.style.display='none';
+    mTypeW(ln.s, ln.t, ()=>{
+      if(mdc){ mdc.style.display='block'; }
+      G.awaitClick = true;
+      G.clickFn = next;
+    });
+  };
+  next();
+}
+
+// Mobile tap to continue
+document.getElementById('mDlgBox')?.addEventListener('click', ()=>{
+  if(G.awaitClick && G.clickFn){
+    G.awaitClick = false;
+    const mdc = document.getElementById('mDlgCont');
+    if(mdc) mdc.style.display='none';
+    G.clickFn();
+  }
+});
+
+function mShowChoices(list){
+  const el = document.getElementById('mobileChoices');
+  if(!el) return;
+  el.innerHTML = '';
+  list.forEach(ch => {
+    const b = document.createElement('button');
+    b.className = `mchb mchb-${G.mode}`;
+    b.innerHTML = `<span class="mcha">▶</span>${ch.t}`;
+    b.onclick = () => {
+      el.classList.remove('on');
+      gainXP(ch.xp||50);
+      if(ch.mode) applyMode(ch.mode);
+      setTimeout(()=> runScene(ch.n), 200);
+    };
+    el.appendChild(b);
+  });
+  setTimeout(()=> el.classList.add('on'), 80);
+}
+
+// Override showConnectBar for mobile (no-op, always visible in bar)
+const _origShowConnectBar = showConnectBar;
+showConnectBar = (show) => {
+  if(!isMobile()) _origShowConnectBar(show);
+};
+
+// Override showChoices to also handle mobile
+const _origShowChoices = showChoices;
+window._mobileRunScene = null;
+
+// ═══════════════════════════════════════════════
+// AMBIENT MUSIC ENGINE v2 — playful, low volume
+// 4 themes: intro / founder / mentor / builder
+// ═══════════════════════════════════════════════
+const AUDIO = (() => {
+  let ctx = null, masterGain = null, muted = false;
+  let currentTheme = null;
+  let nodes = [];
+  let schedTimers = [];
+
+  function getCtx(){
+    if(!ctx){
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0.3, ctx.currentTime);
+      masterGain.connect(ctx.destination);
+    }
+    if(ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  function stopAll(){
+    schedTimers.forEach(t => clearTimeout(t));
+    schedTimers = [];
+    nodes.forEach(n => { try{ n.stop(0); }catch(e){} });
+    nodes = [];
+  }
+
+  function makeReverb(ac){
+    const conv = ac.createConvolver();
+    const len = ac.sampleRate * 2.5;
+    const buf = ac.createBuffer(2, len, ac.sampleRate);
+    for(let ch=0;ch<2;ch++){
+      const d = buf.getChannelData(ch);
+      for(let i=0;i<len;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/len, 2);
+    }
+    conv.buffer = buf;
+    return conv;
+  }
+
+  // Sine note with smooth fade
+  function note(freq, vol, startT, dur, ac, dest){
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(freq, startT);
+    g.gain.setValueAtTime(0, startT);
+    g.gain.linearRampToValueAtTime(vol, startT + 0.06);
+    g.gain.setValueAtTime(vol, startT + dur - 0.2);
+    g.gain.linearRampToValueAtTime(0, startT + dur);
+    o.connect(g); g.connect(dest);
+    o.start(startT); o.stop(startT + dur + 0.05);
+    nodes.push(o);
+  }
+
+  // Triangle note — softer timbre
+  function triNote(freq, vol, startT, dur, ac, dest){
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(freq, startT);
+    g.gain.setValueAtTime(0, startT);
+    g.gain.linearRampToValueAtTime(vol, startT + 0.08);
+    g.gain.linearRampToValueAtTime(0, startT + dur);
+    o.connect(g); g.connect(dest);
+    o.start(startT); o.stop(startT + dur + 0.05);
+    nodes.push(o);
+  }
+
+  // Soft click/pluck — percussive
+  function pluck(freq, vol, startT, ac, dest){
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(freq * 2, startT);
+    o.frequency.exponentialRampToValueAtTime(freq, startT + 0.08);
+    g.gain.setValueAtTime(vol, startT);
+    g.gain.exponentialRampToValueAtTime(0.0001, startT + 0.5);
+    o.connect(g); g.connect(dest);
+    o.start(startT); o.stop(startT + 0.6);
+    nodes.push(o);
+  }
+
+  // Soft hi-hat tick
+  function tick(vol, startT, ac, dest){
+    const buf = ac.createBuffer(1, ac.sampleRate * 0.05, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const filt = ac.createBiquadFilter(); filt.type='highpass'; filt.frequency.value=8000;
+    const g = ac.createGain(); g.gain.setValueAtTime(vol, startT); g.gain.linearRampToValueAtTime(0, startT+0.05);
+    src.connect(filt); filt.connect(g); g.connect(dest);
+    src.start(startT); nodes.push(src);
+  }
+
+  // ════════════════════════
+  // THEME: INTRO
+  // Gentle, curious, waiting — music box feel
+  // ════════════════════════
+  function playIntro(){
+    const ac = getCtx();
+    const rev = makeReverb(ac);
+    const revG = ac.createGain(); revG.gain.value = 0.4;
+    rev.connect(revG); revG.connect(masterGain);
+
+    // Warm bass drone — very soft
+    const drone = ac.createOscillator();
+    drone.type = 'sine'; drone.frequency.value = 65.4;
+    const dG = ac.createGain(); dG.gain.value = 0.06;
+    drone.connect(dG); dG.connect(masterGain);
+    drone.start(); nodes.push(drone);
+
+    // Slow LFO tremolo on drone
+    const lfo = ac.createOscillator();
+    lfo.frequency.value = 0.15;
+    const lG = ac.createGain(); lG.gain.value = 0.02;
+    lfo.connect(lG); lG.connect(dG.gain);
+    lfo.start(); nodes.push(lfo);
+
+    // Music box melody — C pentatonic ascending
+    const melody = [523.2, 587.3, 659.3, 783.9, 880, 783.9, 659.3, 587.3, 523.2, 659.3, 783.9, 880];
+    let step = 0;
+    function melTick(){
+      const t = ac.currentTime;
+      pluck(melody[step % melody.length], 0.08, t, ac, rev);
+      // Soft harmony every 3 steps
+      if(step % 3 === 0){
+        pluck(melody[step % melody.length] / 2, 0.04, t + 0.01, ac, rev);
+      }
+      step++;
+      schedTimers.push(setTimeout(melTick, 480 + (step%3===0?200:0)));
+    }
+    melTick();
+
+    // Pad chord — very soft sine cluster
+    [261.6, 329.6, 392].forEach((f,i) => {
+      const o = ac.createOscillator();
+      o.type = 'sine'; o.frequency.value = f;
+      const g = ac.createGain(); g.gain.value = 0.025;
+      o.connect(g); g.connect(rev);
+      o.start(); nodes.push(o);
+    });
+  }
+
+  // ════════════════════════
+  // THEME: FOUNDER (f)
+  // Playful determination — bouncy bass, upbeat but not aggressive
+  // ════════════════════════
+  function playFounder(){
+    const ac = getCtx();
+    const rev = makeReverb(ac);
+    const revG = ac.createGain(); revG.gain.value = 0.25;
+    rev.connect(revG); revG.connect(masterGain);
+
+    const BPM = 105; const beat = 60 / BPM * 1000; // ms
+
+    // Bouncy bass line — major key feel
+    const bassNotes = [110, 110, 138.6, 110, 130.8, 110, 123.5, 110];
+    let bStep = 0;
+    function bassTick(){
+      const t = ac.currentTime;
+      triNote(bassNotes[bStep % bassNotes.length], 0.09, t, (beat/1000)*0.7, ac, masterGain);
+      bStep++;
+      schedTimers.push(setTimeout(bassTick, beat * 0.5));
+    }
+    bassTick();
+
+    // Plucky melody — playful major arp (A major: A C# E)
+    const founderMel = [440, 523.2, 554.4, 659.3, 587.3, 523.2, 440, 392];
+    let mStep = 0;
+    function melTick(){
+      const t = ac.currentTime;
+      pluck(founderMel[mStep % founderMel.length], 0.06, t, ac, rev);
+      mStep++;
+      schedTimers.push(setTimeout(melTick, beat * 0.75));
+    }
+    schedTimers.push(setTimeout(melTick, beat * 0.5));
+
+    // Soft tick rhythm
+    let tStep = 0;
+    function tickTick(){
+      const t = ac.currentTime;
+      if(tStep % 2 === 0) tick(0.04, t, ac, masterGain);
+      else tick(0.02, t, ac, masterGain);
+      tStep++;
+      schedTimers.push(setTimeout(tickTick, beat * 0.5));
+    }
+    tickTick();
+
+    // Chord stabs — light and airy
+    const chordTimes = [0, beat*4, beat*8, beat*12];
+    function chordLoop(){
+      const t = ac.currentTime;
+      [220, 277.2, 330].forEach((f,i) => {
+        triNote(f, 0.035, t + i*0.01, (beat/1000)*1.5, ac, rev);
+      });
+      schedTimers.push(setTimeout(chordLoop, beat * 16));
+    }
+    schedTimers.push(setTimeout(chordLoop, beat * 4));
+  }
+
+  // ════════════════════════
+  // THEME: MENTOR (m)
+  // Warm, playful wisdom — xylophone feel, gentle groove
+  // ════════════════════════
+  function playMentor(){
+    const ac = getCtx();
+    const rev = makeReverb(ac);
+    const revG = ac.createGain(); revG.gain.value = 0.45;
+    rev.connect(revG); revG.connect(masterGain);
+
+    const BPM = 88; const beat = 60 / BPM * 1000;
+
+    // Soft warm pad — major 7th chord
+    [261.6, 329.6, 392, 493.9].forEach(f => {
+      const o = ac.createOscillator();
+      o.type = 'sine'; o.frequency.value = f;
+      const vibLfo = ac.createOscillator(); vibLfo.frequency.value = 5;
+      const vibG = ac.createGain(); vibG.gain.value = 1;
+      vibLfo.connect(vibG); vibG.connect(o.frequency);
+      vibLfo.start(); nodes.push(vibLfo);
+      const g = ac.createGain(); g.gain.value = 0.022;
+      o.connect(g); g.connect(rev);
+      o.start(); nodes.push(o);
+    });
+
+    // Xylophone-like melody — pentatonic, warm
+    const mentorMel = [523.2, 659.3, 783.9, 880, 783.9, 659.3, 523.2, 440, 392, 440, 523.2, 587.3];
+    let mIdx = 0;
+    function xylTick(){
+      const t = ac.currentTime;
+      pluck(mentorMel[mIdx % mentorMel.length], 0.07, t, ac, rev);
+      // Gentle harmony a third below sometimes
+      if(mIdx % 4 === 0) pluck(mentorMel[mIdx % mentorMel.length] * 0.75, 0.03, t + 0.05, ac, rev);
+      mIdx++;
+      schedTimers.push(setTimeout(xylTick, beat * (mIdx % 3 === 0 ? 1.5 : 0.75)));
+    }
+    xylTick();
+
+    // Bass walk — smooth
+    const mentorBass = [130.8, 146.8, 164.8, 146.8];
+    let bIdx = 0;
+    function bassWalk(){
+      const t = ac.currentTime;
+      note(mentorBass[bIdx % mentorBass.length], 0.06, t, (beat/1000)*1.8, ac, masterGain);
+      bIdx++;
+      schedTimers.push(setTimeout(bassWalk, beat * 2));
+    }
+    bassWalk();
+
+    // Soft brush tick
+    let tStep = 0;
+    function brushTick(){
+      const t = ac.currentTime;
+      tick(tStep % 4 === 0 ? 0.035 : 0.015, t, ac, masterGain);
+      tStep++;
+      schedTimers.push(setTimeout(brushTick, beat * 0.5));
+    }
+    schedTimers.push(setTimeout(brushTick, beat));
+  }
+
+  // ════════════════════════
+  // THEME: BUILDER (b)
+  // Playful electronic — chiptune-ish, constructive fun
+  // ════════════════════════
+  function playBuilder(){
+    const ac = getCtx();
+    const rev = makeReverb(ac);
+    const revG = ac.createGain(); revG.gain.value = 0.2;
+    rev.connect(revG); revG.connect(masterGain);
+
+    const BPM = 112; const beat = 60 / BPM * 1000;
+
+    // Chiptune bass — square wave but filtered soft
+    const builderBass = [110, 110, 123.5, 110, 130.8, 110, 138.6, 123.5];
+    let bIdx = 0;
+    function chipBass(){
+      const t = ac.currentTime;
+      const o = ac.createOscillator();
+      o.type = 'square'; o.frequency.value = builderBass[bIdx % builderBass.length];
+      const filt = ac.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 600;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.05, t);
+      g.gain.linearRampToValueAtTime(0, t + (beat/1000)*0.4);
+      o.connect(filt); filt.connect(g); g.connect(masterGain);
+      o.start(t); o.stop(t + (beat/1000)*0.5);
+      nodes.push(o);
+      bIdx++;
+      schedTimers.push(setTimeout(chipBass, beat * 0.5));
+    }
+    chipBass();
+
+    // Chiptune arp melody — major, upbeat, slightly retro
+    const builderArp = [880, 1046.5, 1174.7, 1318.5, 1174.7, 1046.5, 880, 783.9, 880, 987.8, 1046.5, 987.8];
+    let aIdx = 0;
+    function arpTick(){
+      const t = ac.currentTime;
+      const o = ac.createOscillator();
+      o.type = 'square'; o.frequency.value = builderArp[aIdx % builderArp.length];
+      const filt = ac.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 2000;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.035, t);
+      g.gain.linearRampToValueAtTime(0, t + (beat/1000)*0.35);
+      o.connect(filt); filt.connect(g); g.connect(rev);
+      o.start(t); o.stop(t + (beat/1000)*0.4);
+      nodes.push(o);
+      aIdx++;
+      schedTimers.push(setTimeout(arpTick, beat * 0.25));
+    }
+    schedTimers.push(setTimeout(arpTick, beat));
+
+    // Soft rhythm click
+    let tIdx = 0;
+    function clickTick(){
+      const t = ac.currentTime;
+      tick(tIdx % 4 === 0 ? 0.04 : 0.018, t, ac, masterGain);
+      tIdx++;
+      schedTimers.push(setTimeout(clickTick, beat * 0.5));
+    }
+    clickTick();
+
+    // Playful chord stab every 4 bars
+    function stabTick(){
+      const t = ac.currentTime;
+      [440, 554.4, 659.3].forEach((f, i) => {
+        pluck(f, 0.04, t + i * 0.02, ac, rev);
+      });
+      schedTimers.push(setTimeout(stabTick, beat * 16));
+    }
+    schedTimers.push(setTimeout(stabTick, beat * 8));
+  }
+
+  // ── PUBLIC API ──
+  const themeMap = { '': playIntro, f: playFounder, m: playMentor, b: playBuilder };
+
+  function play(theme){
+    if(theme === currentTheme) return;
+    currentTheme = theme;
+    stopAll();
+    const ac = getCtx();
+    // Smooth fade in
+    masterGain.gain.setValueAtTime(0, ac.currentTime);
+    masterGain.gain.linearRampToValueAtTime(muted ? 0 : 0.3, ac.currentTime + 1.2);
+    (themeMap[theme] || playIntro)();
+  }
+
+  function toggleMute(){
+    muted = !muted;
+    const ac = getCtx();
+    masterGain.gain.linearRampToValueAtTime(muted ? 0 : 0.3, ac.currentTime + 0.3);
+    const btn = document.getElementById('muteBtn');
+    if(btn){ btn.textContent = muted ? '🔇' : '🔊'; btn.classList.toggle('muted', muted); }
+  }
+
+  function init(){
+    // Play intro theme on first user gesture anywhere on page
+    const start = (e) => {
+      // Don't override if a path button already triggered startAndPlay
+      if(currentTheme !== null) return;
+      const ac = getCtx();
+      const doPlay = () => play('');
+      if(ac.state === 'suspended') ac.resume().then(doPlay);
+      else doPlay();
+      document.removeEventListener('click', start);
+      document.removeEventListener('touchstart', start);
+    };
+    document.addEventListener('click', start);
+    document.addEventListener('touchstart', start);
+  }
+
+  // startAndPlay: always called from a user gesture — safe to create/resume ctx
+  function startAndPlay(theme){
+    // Force context creation and resume on this gesture
+    const ac = getCtx();
+    if(ac.state === 'suspended') ac.resume().then(() => play(theme));
+    else play(theme);
+  }
+
+  return { play, startAndPlay, toggleMute, init };
+})();
+
+function toggleMute(){ AUDIO.toggleMute(); }
+
+// ═══════════════════════════════════════════════
+// ANIMATION LOOP
+// ═══════════════════════════════════════════════
 function loop(){bgT+=0.018;const r=BG[bgM]||BG.m;r(cx,cv.width,cv.height,bgT);requestAnimationFrame(loop)}
 loop();
+AUDIO.init();
 </script>
 </body>
 </html>
